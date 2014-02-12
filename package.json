@@ -1,0 +1,21 @@
+{
+    "name": "sfz",
+    "version": "0.0.1",
+    "author": "Mark Wise <markmediadude@gmail.com>",
+    "contributors": [],
+    "description": "JavaScript solution for using .sfz files",
+    "dependencies": {
+        "pegjs": "*"
+    },
+    "devDependencies": {
+      "mocha": "*",
+      "chai": "*"
+    },
+    "scripts": {
+        "generate_parser": "./node_modules/pegjs/bin/pegjs lib/sfz.pegjs lib/parser.js",
+        "test": "./node_modules/mocha/bin/mocha",
+        "ci": "./node_modules/mocha/bin/mocha -w"
+    },
+    "keywords": [],
+    "main": "lib/sfz.js"
+}
