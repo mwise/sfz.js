@@ -1,12 +1,12 @@
 {
-  "lib/*.js": {
+  "src/*.js": {
     "command": "server",
     "alternate": "test/%s.spec.js",
     "template_alternate": "mocha"
   },
   "test/*.spec.js": {
     "command": "tserver",
-    "alternate": "lib/%s.js",
+    "alternate": "src/%s.js",
     "test_command": "make test_single FILE=%s.spec",
     "reverse_layout": true
   }

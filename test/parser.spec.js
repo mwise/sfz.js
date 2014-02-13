@@ -5,7 +5,7 @@ var chai = require("chai")
   , pegjs = require("pegjs")
   , fs = require("fs")
   , path = require("path")
-  , grammarPath = path.join(__dirname + "/../lib/sfz.pegjs");
+  , grammarPath = path.join(__dirname + "/../src/sfz.pegjs");
 
 describe("parsing", function(){
   before(function(done){
