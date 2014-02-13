@@ -1,6 +1,7 @@
 var chai = require("chai")
   , expect = chai.expect
   , context = describe
+  , _ = require("underscore")
   , pegjs = require("pegjs")
   , fs = require("fs")
   , path = require("path")
@@ -161,88 +162,247 @@ describe("parsing", function(){
       }
     }
 
-    testIntegerOpcode("lochan")
-    testIntegerOpcode("hichan")
-    testMidiNoteOpcode("lokey")
-    testMidiNoteOpcode("hikey")
     testOpcode("key", "c#4", "lokey", "c#4")
     testOpcode("key", "c#4", "hikey", "c#4")
     testOpcode("key", "1", "lokey", 1)
     testOpcode("key", "1", "hikey", 1)
 
-    testIntegerOpcode("lovel")
-    testIntegerOpcode("hivel")
-    testIntegerOpcode("lobend")
-    testIntegerOpcode("hibend")
-    testIntegerOpcode("lochanaft")
-    testIntegerOpcode("hichanaft")
-    testIntegerOpcode("lopolyaft")
-    testIntegerOpcode("hipolyaft")
-    testFloatOpcode("lorand")
-    testFloatOpcode("hirand")
-    testFloatOpcode("lobpm")
-    testFloatOpcode("hibpm")
-    testIntegerOpcode("seq_length")
-    testIntegerOpcode("seq_position")
-    testMidiNoteOpcode("sw_lokey")
-    testMidiNoteOpcode("sw_hikey")
-    testMidiNoteOpcode("sw_last")
-    testMidiNoteOpcode("sw_down")
-    testMidiNoteOpcode("sw_up")
-    testMidiNoteOpcode("sw_previous")
+    var midiNoteOpcodes = [
+      "lokey",
+      "hikey",
+      "sw_lokey",
+      "sw_hikey",
+      "sw_last",
+      "sw_down",
+      "sw_up",
+      "sw_previous"
+    ]
+    _(midiNoteOpcodes).each(function(opcode){
+      testMidiNoteOpcode(opcode)
+    })
+
     testTextOpcode("sw_vel", ["current", "previous"])
     testTextOpcode("sw_trigger", ["attack", "release", "first", "legato"])
-    testIntegerOpcode("group")
-    testIntegerOpcode("off_by")
     testTextOpcode("off_mode", ["fast", "normal"])
-    testFloatOpcode("delay")
-    testFloatOpcode("delay_random")
-    testFloatOpcode("delay_cc1")
-    testFloatOpcode("delay_cc2")
-    testIntegerOpcode("offset")
-    testIntegerOpcode("offset_random")
-    testIntegerOpcode("offset_cc1")
-    testIntegerOpcode("offset_cc64")
-    testIntegerOpcode("end")
-    testIntegerOpcode("count")
     testTextOpcode("loop_mode", ["no_loop", "one_shot", "loop_continuous", "loop_sustain"])
-    testIntegerOpcode("loop_start")
-    testIntegerOpcode("loop_end")
-    testFloatOpcode("sync_beats")
-    testFloatOpcode("sync_offset")
+    testTextOpcode("fil_type",
+      ["lpf_1p", "hpf_1p", "lpf_2p", "hpf_2p", "bpf_2p", "brf_2p"])
+    testTextOpcode("xf_keycurve", ["gain", "power"])
+    testTextOpcode("xf_velcurve", ["gain", "power"])
+    testTextOpcode("xf_cccurve", ["gain", "power"])
 
-    testIntegerOpcode("transpose")
-    testIntegerOpcode("tune")
-    testIntegerOpcode("tune")
-    testIntegerOpcode("pitch_keycenter")
-    testIntegerOpcode("pitch_keycenter")
-    testIntegerOpcode("pitch_keytrack")
-    testIntegerOpcode("pitch_keytrack")
-    testIntegerOpcode("pitch_veltrack")
-    testIntegerOpcode("pitch_veltrack")
-    testIntegerOpcode("pitch_random")
-    testIntegerOpcode("pitch_random")
-    testIntegerOpcode("bend_up")
-    testIntegerOpcode("bend_up")
-    testIntegerOpcode("bend_down")
-    testIntegerOpcode("bend_down")
+    var floatOpcodes = [
+      "fillfo_delay",
+      "fillfo_fade",
+      "fillfo_freq",
+      "lorand",
+      "hirand",
+      "lobpm",
+      "hibpm",
+      "delay",
+      "delay_random",
+      "delay_cc1",
+      "delay_cc2",
+      "sync_beats",
+      "sync_offset",
+      "pitcheg_delay",
+      "pitcheg_start",
+      "pitcheg_attack",
+      "pitcheg_hold",
+      "pitcheg_decay",
+      "pitcheg_sustain",
+      "pitcheg_release",
+      "pitcheg_vel2delay",
+      "pitcheg_vel2attack",
+      "pitcheg_vel2hold",
+      "pitcheg_vel2decay",
+      "pitcheg_vel2sustain",
+      "pitchlfo_delay",
+      "pitchlfo_fade",
+      "pitchlfo_freq",
+      "pitchlfo_freqcc1",
+      "pitchlfo_freqcc60",
+      "pitchlfo_freqchanaft",
+      "pitchlfo_freqpolyaft",
+      "cutoff",
+      "resonance",
+      "fileg_delay",
+      "fileg_start",
+      "fileg_attack",
+      "fileg_hold",
+      "fileg_decay",
+      "fileg_sustain",
+      "fileg_release",
+      "fileg_vel2delay",
+      "fileg_vel2attack",
+      "fileg_vel2hold",
+      "fileg_vel2decay",
+      "fileg_vel2sustain",
+      "fileg_vel2release",
+      "volume",
+      "pan",
+      "width",
+      "position",
+      "amp_keytrack",
+      "amp_veltrack",
+      "amp_random",
+      "rt_decay",
+      "ampeg_delay",
+      "ampeg_start",
+      "ampeg_attack",
+      "ampeg_hold",
+      "ampeg_decay",
+      "ampeg_sustain",
+      "ampeg_release",
+      "ampeg_vel2delay",
+      "ampeg_vel2attack",
+      "ampeg_vel2hold",
+      "ampeg_vel2decay",
+      "ampeg_vel2sustain",
+      "ampeg_vel2release",
+      "amplfo_delay",
+      "amplfo_fade",
+      "amplfo_freq",
+      "amplfo_depthchanaft",
+      "amplfo_depthpolyaft",
+      "amplfo_depth",
+      "amplfo_freqchanaft",
+      "amplfo_freqpolyaft",
+      "eq1_freq",
+      "eq2_freq",
+      "eq3_freq",
+      "eq1_vel2freq",
+      "eq2_vel2freq",
+      "eq3_vel2freq",
+      "eq1_bw",
+      "eq2_bw",
+      "eq3_bw",
+      "eq1_gain",
+      "eq2_gain",
+      "eq3_gain",
+      "eq1_vel2gain",
+      "eq2_vel2gain",
+      "eq3_vel2gain",
+      "effect1",
+      "effect2"
+    ]
+    _(floatOpcodes).each(function(opcode){
+      testFloatOpcode(opcode)
+    })
 
-    testFloatOpcode("pitcheg_delay")
+    var integerOpcodes = [
+      "fillfo_depth",
+      "fillfo_freqchanaft",
+      "fillfo_freqpolyaft",
+      "fillfo_freqchanaft",
+      "fillfo_freqpolyaft",
+      "lochan",
+      "hichan",
+      "lovel",
+      "hivel",
+      "lobend",
+      "hibend",
+      "lochanaft",
+      "hichanaft",
+      "lopolyaft",
+      "hipolyaft",
+      "seq_length",
+      "seq_position",
+      "group",
+      "off_by",
+      "offset",
+      "offset_random",
+      "offset_cc1",
+      "offset_cc64",
+      "end",
+      "count",
+      "loop_start",
+      "loop_end",
+      "transpose",
+      "tune",
+      "tune",
+      "pitch_keycenter",
+      "pitch_keycenter",
+      "pitch_keytrack",
+      "pitch_keytrack",
+      "pitch_veltrack",
+      "pitch_veltrack",
+      "pitch_random",
+      "pitch_random",
+      "bend_up",
+      "bend_up",
+      "bend_down",
+      "bend_down",
+      "pitcheg_depth",
+      "fileg_depth",
+      "fileg_vel2depth",
+      "fil_keytrack",
+      "fil_keycenter",
+      "fil_veltrack",
+      "fil_random",
+      "cutoff_cc1",
+      "cutoff_cc2",
+      "cutoff_chanaft",
+      "cutoff_polyaft",
+      "pitchlfo_depthcc1",
+      "pitchlfo_depthcc60",
+      "pitchlfo_depth",
+      "pitchlfo_depthchanaft",
+      "pitchlfo_depthpolyaft",
+      "pitcheg_vel2depth",
+      "amp_keycenter",
+      "output",
+      "xfin_lokey",
+      "xfin_hikey",
+      "xfin_lovel",
+      "xfin_hivel",
+      "xfout_lovel",
+      "xfout_hivel"
+    ]
+    _(integerOpcodes).each(function(opcode){
+      testIntegerOpcode(opcode)
+    })
 
-    testFloatOpcode("pitcheg_delay")
-    testFloatOpcode("pitcheg_start")
-    testFloatOpcode("pitcheg_attack")
-    testFloatOpcode("pitcheg_hold")
-    testFloatOpcode("pitcheg_decay")
-    testFloatOpcode("pitcheg_sustain")
-    testFloatOpcode("pitcheg_release")
-    testIntegerOpcode("pitcheg_depth")
-    testFloatOpcode("pitcheg_vel2delay")
-    testFloatOpcode("pitcheg_vel2attack")
-    testFloatOpcode("pitcheg_vel2hold")
-    testFloatOpcode("pitcheg_vel2decay")
-    testFloatOpcode("pitcheg_vel2sustain")
-    testIntegerOpcode("pitcheg_vel2depth")
+    var sequentialFloatOpcodes = [
+      "fillfo_freqcc",
+      "gain_cc",
+      "ampeg_delaycc",
+      "ampeg_startcc",
+      "ampeg_attackcc",
+      "ampeg_holdcc",
+      "ampeg_decaycc",
+      "ampeg_sustaincc",
+      "ampeg_releasecc",
+      "amplfo_depthcc",
+      "amplfo_freqcc",
+      "eq1_freqcc",
+      "eq2_freqcc",
+      "eq3_freqcc",
+      "eq1_bwcc",
+      "eq2_bwcc",
+      "eq3_bwcc",
+      "eq1_gaincc",
+      "eq2_gaincc",
+      "eq3_gaincc",
+      "amp_velcurve_",
+      "amp_velcurve_"
+    ]
+    _(sequentialFloatOpcodes).each(function(opcode){
+      testFloatOpcode(opcode + 1)
+      testFloatOpcode(opcode + 127)
+    })
+
+    var sequentialIntegerOpcodes = [
+      "fillfo_depthcc",
+      "fillfo_depthcc",
+      "xfin_locc",
+      "xfin_hicc",
+      "xfout_locc",
+      "xfout_hicc"
+    ]
+    _(sequentialIntegerOpcodes).each(function(opcode){
+      testIntegerOpcode(opcode + 1)
+    })
 
   })
 })

@@ -9,7 +9,8 @@
     },
     "devDependencies": {
       "mocha": "*",
-      "chai": "*"
+      "chai": "*",
+      "underscore": "*"
     },
     "scripts": {
         "generate_parser": "./node_modules/pegjs/bin/pegjs lib/sfz.pegjs lib/parser.js",
