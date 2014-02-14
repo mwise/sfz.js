@@ -1,3 +1,5 @@
+var  Parameter = require("./parameter")
+
 Region = function(opts){
   this.sample = {}
   this.inputControls = {}

@@ -2,8 +2,10 @@ var chai = require("chai")
   , expect = chai.expect
   , context = describe
   , subject = require("../src/region")
+  , Parameter = require("../src/parameter")
 
 describe(subject.name, function(){
+
   context("after initialization", function(){
     beforeEach(function(){
       this.subject = new subject()
@@ -20,5 +22,12 @@ describe(subject.name, function(){
     it("has performanceParameters", function(){
       expect(this.subject.performanceParameters).instanceof(Object)
     })
+
+
+    describe("noteOn()", function(){
+
+
+    })
+
   })
 })
