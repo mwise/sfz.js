@@ -59,12 +59,12 @@ describe("parsing", function(){
 
   context("a string with a single region with a sample opcode", function(){
     beforeEach(function(){
-      this.result = this.subject.parse("<region> sample=trumpet_pp_c4.wav")
+      this.result = this.subject.parse("<region> sample=trumpet-pp-c4.wav")
     })
 
     it("has one region with the correct sample", function(){
       expect(this.result.regions).eql([{
-        sample: "trumpet_pp_c4.wav"
+        sample: "trumpet-pp-c4.wav"
       }])
     })
   })
@@ -175,7 +175,8 @@ describe("parsing", function(){
       "sw_last",
       "sw_down",
       "sw_up",
-      "sw_previous"
+      "sw_previous",
+      "pitch_keycenter"
     ]
     _(midiNoteOpcodes).each(function(opcode){
       testMidiNoteOpcode(opcode)
@@ -321,17 +322,10 @@ describe("parsing", function(){
       "transpose",
       "tune",
       "tune",
-      "pitch_keycenter",
-      "pitch_keycenter",
-      "pitch_keytrack",
       "pitch_keytrack",
       "pitch_veltrack",
-      "pitch_veltrack",
-      "pitch_random",
       "pitch_random",
       "bend_up",
-      "bend_up",
-      "bend_down",
       "bend_down",
       "pitcheg_depth",
       "fileg_depth",
