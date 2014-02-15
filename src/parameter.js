@@ -3,7 +3,9 @@ var  _ = require("underscore")
 var MAX_INT = 4294967296
   , MAX_BEND = 9600
 
-Parameter = function(opts){}
+Parameter = function(opts){
+
+}
 
 var defaults = {
   lochan: {
@@ -1182,5 +1184,12 @@ _(128).times(function(i){
     Parameter.performanceParameters.push(paramName + i)
   })
 })
+
+var defaultValues = {}
+_(defaults).each(function(settings, name){
+  defaultValues[name] = settings.value
+})
+Parameter.defaultValues = defaultValues
+
 
 module.exports = Parameter

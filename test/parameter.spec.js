@@ -475,6 +475,12 @@ describe(subject.name, function(){
     })
   })
 
+  describe("defaultValues", function(){
+    it("is the default value for all parameters", function(){
+      expect(subject.defaultValues.lochan).eql(subject.defaults.lochan.value)
+    })
+  })
+
   context("after initialization", function(){
     beforeEach(function(){
       this.subject = new subject()
