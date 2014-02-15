@@ -15,7 +15,11 @@ model = function(opts){
   this.polyaft = 64
   this.bpm = 120
 
-  this.synth = opts.synth || new NullSynth()
+  if (opts.driver) {
+    this.synth = new opts.driver(this, opts.audioContext)
+  } else {
+    this.synth = new NullSynth()
+  }
 }
 
 model.prototype.shouldPlayRegion = function(region, noteOn, rand){
@@ -63,6 +67,14 @@ model.prototype.noteOn = function(channel, pitch, velocity){
 
 model.prototype.play = function(region, noteOn){
   this.synth.play(region, noteOn)
+}
+
+model.prototype.samples = function(){
+  var samples = []
+  _(this.regions).each(function(region){
+    if (region.sample) samples.push(region.sample)
+  })
+  return samples
 }
 
 module.exports = model

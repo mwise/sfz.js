@@ -267,7 +267,21 @@ describe(subject.name, function(){
 
         expect(this.subject.synth.play).calledWith("foo", "bar")
       })
+    
+    })
 
+    describe("samples", function(){
+      beforeEach(function(){
+        this.subject.regions = [
+          { sample: "foo.wav" },
+          { sample: "bar.mp3" },
+          {}
+        ]
+      })
+
+      it("plucks sample values from the regions", function(){
+        expect(this.subject.samples()).eql(["foo.wav", "bar.mp3"])
+      })
     
     })
   })

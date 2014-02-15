@@ -455,7 +455,7 @@ Filename
  }
 
 FileExtension
-  = ".wav" / ".ogg"
+  = ".wav" / ".ogg" / ".mp3"
 
 /* ===== A.1 Lexical Grammar ===== */
 

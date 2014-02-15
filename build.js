@@ -3,11 +3,10 @@ var sfz = require('./src/sfz')
 
 sfz.WebAudioSynth = require("./src/client/web_audio_synth")
 
-sfz.load = function(url, callback){
+sfz.load = function(audioContext, url, callback){
   var self = this
   AjaxLoader.load(url, function(str){
-    console.log("loaded!!")
-    var instrument = self.parse(str)
+    var instrument = self.parse(str, sfz.WebAudioSynth, audioContext)
     callback(instrument)
   })
 }
