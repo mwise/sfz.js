@@ -12,6 +12,8 @@
     "karma-mocha": "~0.1.1",
     "mocha": "*",
     "chai": "*",
+    "sinon": "*",
+    "sinon-chai": "*",
     "underscore": "*",
     "requirejs": "*",
     "karma-requirejs": "~0.2.1",
