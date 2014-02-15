@@ -1,6 +1,7 @@
 define(function(require, exports, module){
 
   var sfz = require("sfz")
+    , WebAudioSynth = sfz.WebAudioSynth
 
   describe("sfz", function(){
 

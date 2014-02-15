@@ -1,7 +1,7 @@
 all: browserify
 
 browserify:
-	browserify build.js --standalone sfz > test/client/sfz.js
+	browserify build.js --standalone sfz > build/sfz.js
 
 test: browserify test_node test_client
 
