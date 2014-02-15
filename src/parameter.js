@@ -362,10 +362,448 @@ var defaults = {
     min: -200,
     max: 200
   },
+  fil_type: {
+    value: "lpf_2p",
+    allowedValues: ["lpf_1p", "hpf_1p", "lpf_2p", "hpf_2p", "bpf_2p", "brf_2p"]
+  },
+  cutoff: {
+    value: null,
+    min: 0,
+    max: 22050
+  },
+  cutoff_chanaft: {
+    value: 0,
+    min: -MAX_BEND,
+    max: MAX_BEND
+  },
+  cutoff_polyaft: {
+    value: 0,
+    min: -MAX_BEND,
+    max: MAX_BEND
+  },
+  resonance: {
+    value: 0,
+    min: 0,
+    max: 40
+  },
+  fil_keytrack: {
+    value: 0,
+    min: 0,
+    max: 1200
+  },
+  fil_keycenter: {
+    value: 60,
+    min: 0,
+    max: 127
+  },
+  fil_veltrack: {
+    value: 0,
+    min: -MAX_BEND,
+    max: MAX_BEND
+  },
+  fil_random: {
+    value: 0,
+    min: 0,
+    max: MAX_BEND
+  },
+  fileg_delay: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  fileg_start: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  fileg_attack: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  fileg_hold: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  fileg_decay: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  fileg_sustain: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  fileg_release: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  fileg_depth: {
+    value: 0,
+    min: -12000,
+    max: 12000
+  },
+  fileg_vel2delay: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  fileg_vel2attack: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  fileg_vel2hold: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  fileg_vel2decay: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  fileg_vel2sustain: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  fileg_vel2release: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  fileg_vel2depth: {
+    value: 0,
+    min: -12000,
+    max: 12000
+  },
+  fillfo_delay: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  fillfo_fade: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  fillfo_freq: {
+    value: 0,
+    min: 0,
+    max: 20
+  },
+  fillfo_depth: {
+    value: 0,
+    min: -1200,
+    max: 1200
+  },
+  fillfo_depthchanaft: {
+    value: 0,
+    min: -1200,
+    max: 1200
+  },
+  fillfo_depthpolyaft: {
+    value: 0,
+    min: -1200,
+    max: 1200
+  },
+  fillfo_freqchanaft: {
+    value: 0,
+    min: -200,
+    max: 200
+  },
+  fillfo_freqpolyaft: {
+    value: 0,
+    min: -200,
+    max: 200
+  },
+
+  volume: {
+    value: 0,
+    min: -144,
+    max: 6
+  },
+  pan: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  width: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  position: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  amp_keytrack: {
+    value: 0,
+    min: -96,
+    max: 12
+  },
+  amp_keycenter: {
+    value: 60,
+    min: 0,
+    max: 127
+  },
+  amp_veltrack: {
+    value: 100,
+    min: -100,
+    max: 100
+  },
+  amp_random: {
+    value: 0,
+    min: 0,
+    max: 24
+  },
+  rt_decay: {
+    value: 0,
+    min: 0,
+    max: 200
+  },
+  output: {
+    value: 0,
+    min: 0,
+    max: 1024
+  },
+  xfin_lokey: {
+    value: 0,
+    min: 0,
+    max: 127
+  },
+  xfin_hikey: {
+    value: 0,
+    min: 0,
+    max: 127
+  },
+  xfout_lokey: {
+    value: 127,
+    min: 0,
+    max: 127
+  },
+  xfout_hikey: {
+    value: 127,
+    min: 0,
+    max: 127
+  },
+  xf_keycurve: {
+    value: "power",
+    allowedValues: ["gain", "power"]
+  },
+  xf_velcurve: {
+    value: "power",
+    allowedValues: ["gain", "power"]
+  },
+  xf_cccurve: {
+    value: "power",
+    allowedValues: ["gain", "power"]
+  },
+  ampeg_delay: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  ampeg_start: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  ampeg_attack: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  ampeg_hold: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  ampeg_decay: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  ampeg_sustain: {
+    value: 100,
+    min: 0,
+    max: 100
+  },
+  ampeg_release: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  ampeg_depth: {
+    value: 0,
+    min: -12000,
+    max: 12000
+  },
+  ampeg_vel2delay: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  ampeg_vel2attack: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  ampeg_vel2hold: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  ampeg_vel2decay: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  ampeg_vel2sustain: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  ampeg_vel2release: {
+    value: 0,
+    min: -100,
+    max: 100
+  },
+  amplfo_delay: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  amplfo_fade: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  amplfo_freq: {
+    value: 0,
+    min: 0,
+    max: 20
+  },
+  amplfo_depth: {
+    value: 0,
+    min: -10,
+    max: 10
+  },
+  amplfo_depthchanaft: {
+    value: 0,
+    min: -10,
+    max: 10
+  },
+  amplfo_depthpolyaft: {
+    value: 0,
+    min: -10,
+    max: 10
+  },
+  amplfo_freqchanaft: {
+    value: 0,
+    min: -200,
+    max: 200
+  },
+  amplfo_freqpolyaft: {
+    value: 0,
+    min: -200,
+    max: 200
+  },
+  eq1_freq: {
+    value: 50,
+    min: 0,
+    max: 30000
+  },
+  eq2_freq: {
+    value: 500,
+    min: 0,
+    max: 30000
+  },
+  eq3_freq: {
+    value: 5000,
+    min: 0,
+    max: 30000
+  },
+  eq1_vel2freq: {
+    value: 0,
+    min: -30000,
+    max: 30000
+  },
+  eq2_vel2freq: {
+    value: 0,
+    min: -30000,
+    max: 30000
+  },
+  eq3_vel2freq: {
+    value: 0,
+    min: -30000,
+    max: 30000
+  },
+  eq1_bw: {
+    value: 1,
+    min: 0.001,
+    max: 4
+  },
+  eq2_bw: {
+    value: 1,
+    min: 0.001,
+    max: 4
+  },
+  eq3_bw: {
+    value: 1,
+    min: 0.001,
+    max: 4
+  },
+  eq1_gain: {
+    value: 0,
+    min: -96,
+    max: 24
+  },
+  eq2_gain: {
+    value: 0,
+    min: -96,
+    max: 24
+  },
+  eq3_gain: {
+    value: 0,
+    min: -96,
+    max: 24
+  },
+  eq1_vel2gain: {
+    value: 0,
+    min: -96,
+    max: 24
+  },
+  eq2_vel2gain: {
+    value: 0,
+    min: -96,
+    max: 24
+  },
+  eq3_vel2gain: {
+    value: 0,
+    min: -96,
+    max: 24
+  },
+  effect1: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+  effect2: {
+    value: 0,
+    min: 0,
+    max: 100
+  },
+
 
 }
 
-_(127).times(function(i){
+_(128).times(function(i){
   defaults["on_locc" + i] = {
     value: -1,
     min: 0,
@@ -395,6 +833,141 @@ _(127).times(function(i){
     value: 0,
     min: -200,
     max: 200
+  }
+  defaults["cutoff_cc" + i] = {
+    value: 0,
+    min: -MAX_BEND,
+    max: MAX_BEND
+  }
+  defaults["fillfo_depthcc" + i] = {
+    value: 0,
+    min: -1200,
+    max: 1200
+  }
+  defaults["fillfo_freqcc" + i] = {
+    value: 0,
+    min: -200,
+    max: 200
+  }
+  defaults["amp_velcurve_" + i] = {
+    value: 1,
+    min: 0,
+    max: 1
+  }
+  defaults["gain_cc" + i] = {
+    value: 0,
+    min: -144,
+    max: 48
+  }
+  defaults["xfin_locc" + i] = {
+    value: 0,
+    min: 0,
+    max: 127
+  }
+  defaults["xfin_hicc" + i] = {
+    value: 0,
+    min: 0,
+    max: 127
+  }
+  defaults["xfout_locc" + i] = {
+    value: 0,
+    min: 0,
+    max: 127
+  }
+  defaults["xfout_hicc" + i] = {
+    value: 0,
+    min: 0,
+    max: 127
+  }
+  defaults["ampeg_delaycc" + i] = {
+    value: 0,
+    min: -100,
+    max: 100
+  }
+  defaults["ampeg_startcc" + i] = {
+    value: 0,
+    min: -100,
+    max: 100
+  }
+  defaults["ampeg_attackcc" + i] = {
+    value: 0,
+    min: -100,
+    max: 100
+  }
+  defaults["ampeg_holdcc" + i] = {
+    value: 0,
+    min: -100,
+    max: 100
+  }
+  defaults["ampeg_decaycc" + i] = {
+    value: 0,
+    min: -100,
+    max: 100
+  }
+  defaults["ampeg_sustaincc" + i] = {
+    value: 100,
+    min: -100,
+    max: 100
+  }
+  defaults["ampeg_releasecc" + i] = {
+    value: 0,
+    min: -100,
+    max: 100
+  }
+  defaults["amplfo_depthcc" + i] = {
+    value: 0,
+    min: -10,
+    max: 10
+  }
+  defaults["amplfo_freqcc" + i] = {
+    value: 0,
+    min: -200,
+    max: 200
+  }
+  defaults["eq1_freqcc" + i] = {
+    value: 0,
+    min: -30000,
+    max: 30000
+  }
+  defaults["eq2_freqcc" + i] = {
+    value: 0,
+    min: -30000,
+    max: 30000
+  }
+  defaults["eq3_freqcc" + i] = {
+    value: 0,
+    min: -30000,
+    max: 30000
+  }
+  defaults["eq1_bwcc" + i] = {
+    value: 0,
+    min: -4,
+    max: 4
+  }
+  defaults["eq2_bwcc" + i] = {
+    value: 0,
+    min: -4,
+    max: 4
+  }
+  defaults["eq3_bwcc" + i] = {
+    value: 0,
+    min: -4,
+    max: 4
+  }
+  defaults["eq1_gaincc" + i] = {
+    value: 0,
+    min: -96,
+    max: 48
+  }
+  defaults["eq2_gaincc" + i] = {
+    value: 0,
+    min: -96,
+    max: 48
+  }
+  defaults["eq3_gaincc" + i] = {
+    value: 0,
+    min: -96,
+    max: 48
   }
 })
 
