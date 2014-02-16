@@ -11,8 +11,8 @@ var model = function(buffer, region, noteOn, audioContext){
   this.output = audioContext.createGainNode()
 
   this.setupSource(buffer, region, noteOn)
-  this.setupAmp(region)
-  this.setupFilter(region)
+  this.setupAmp(region, noteOn)
+  this.setupFilter(region, noteOn)
 
   if (this.filter) {
     this.source.connect(this.filter)
@@ -33,7 +33,7 @@ model.prototype.setupSource = function(buffer, region, noteOn){
   this.source.playbackRate.value = playbackRate
 }
 
-model.prototype.setupAmp = function(region){
+model.prototype.setupAmp = function(region, noteOn){
   this.amp = this.audioContext.createGainNode()
   this.ampeg = new EnvelopeGenerator({
     context: this.audioContext,
@@ -49,7 +49,7 @@ model.prototype.setupAmp = function(region){
   this.ampeg.connect(this.amp.gain)
 }
 
-model.prototype.setupFilter = function(region){
+model.prototype.setupFilter = function(region, noteOn){
   if (!region.cutoff) return;
 
   this.filter = new Filter({
@@ -63,7 +63,7 @@ model.prototype.setupFilter = function(region){
     keycenter: region.fil_keycenter,
     veltrack: region.fil_veltrack,
     random: region.fil_random
-  })
+  }, noteOn)
 }
 
 model.prototype.start = function(){

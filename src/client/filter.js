@@ -34,7 +34,7 @@ var defaults = {
   random: 0
 }
 
-var Filter = function(opts){
+var Filter = function(opts, noteOn){
   this.numberOfInputs = 1
   this.numberOfOutputs = 1
   this.channelCount = 2
@@ -46,13 +46,17 @@ var Filter = function(opts){
   _.extend(this, opts)
   _.defaults(this, defaults)
 
-  this.frequency.value = this.cutoff
+  var noteCutoffAdj = (noteOn.pitch - this.keycenter) * this.keytrack
+    , velCutoffAdj = this.veltrack * noteOn.velocity / 127
+    , cutoffAdj = noteCutoffAdj + velCutoffAdj
+
+  this.frequency.value = this.cutoff + cutoffAdj
   this.Q.value = this.resonance
 }
 
-var FilterFactory = function(opts){
+var FilterFactory = function(opts, noteOn){
   var filter = opts.context.createBiquadFilter()
-  Filter.call(filter, opts)
+  Filter.call(filter, opts, noteOn)
 
   return filter
 }
