@@ -43,7 +43,6 @@
     this.midiIn = null
 
     if (typeof navigator.requestMIDIAccess == "function") {
-      console.log("requesting midi")
       navigator.requestMIDIAccess().then(this.onMIDIStarted.bind(this), this.onMIDISystemError.bind(this))
     } else {
       console.log("Error - this browser does not support MIDI.")

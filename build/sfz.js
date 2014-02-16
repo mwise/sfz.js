@@ -14,7 +14,7 @@ sfz.load = function(audioContext, url, callback){
 
 module.exports = sfz
 
-},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":6,"./src/sfz":12}],2:[function(_dereq_,module,exports){
+},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":7,"./src/sfz":13}],2:[function(_dereq_,module,exports){
 //     Underscore.js 1.6.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -1425,44 +1425,105 @@ BufferLoader.prototype.load = function(){
 module.exports = BufferLoader
 
 },{}],5:[function(_dereq_,module,exports){
+var _ = _dereq_("underscore")
+
+var defaults = {
+  delay: 0,
+  start: 0,
+  attack: 0,
+  hold: 0,
+  decay: 0,
+  release: 0,
+  sustain: 100,
+  depth: 100
+}
+
+var EnvelopeGenerator = function(opts){
+  this.context = opts.context
+  _.extend(this, opts)
+  _.defaults(this, defaults)
+}
+
+EnvelopeGenerator.prototype.trigger = function() {
+  var now = this.context.currentTime
+  var attackTime = now + this.attack
+    , holdTime = attackTime + this.hold
+    , decayTime = holdTime + this.decay
+    , maxValue = this.depth / 100
+    , sustainLevel = this.sustain / 100
+
+  this.param.cancelScheduledValues(now)
+  this.param.setValueAtTime(0, now)
+  this.param.linearRampToValueAtTime(maxValue, attackTime)
+  this.param.setValueAtTime(maxValue, holdTime)
+  this.param.linearRampToValueAtTime(sustainLevel, decayTime)
+}
+
+EnvelopeGenerator.prototype.triggerRelease = function(){
+  var now = this.context.currentTime
+  console.log(this.param.value, this.release)
+  this.param.setValueAtTime(this.param.value, now)
+  this.param.linearRampToValueAtTime(0, now + this.release)
+}
+
+EnvelopeGenerator.prototype.connect = function(param) {
+  this.param = param
+}
+
+module.exports = EnvelopeGenerator
+
+},{"underscore":2}],6:[function(_dereq_,module,exports){
+var EnvelopeGenerator = _dereq_("./envelope_generator")
 
 var pitchToFreq = function(pitch){
   return Math.pow(2, (pitch-69)/12.0) * 440
 }
 
 var model = function(buffer, region, noteOn, audioContext){
-  this.gainNode = audioContext.createGainNode()
-  this.gainNode.gain.value = .5
+  this.amp = audioContext.createGainNode()
+  this.ampeg = new EnvelopeGenerator({
+    context: audioContext,
+    delay: region.ampeg_delay,
+    start: region.ampeg_start,
+    attack: region.ampeg_attack,
+    hold: region.ampeg_hold,
+    decay: region.ampeg_decay,
+    sustain: region.ampeg_sustain,
+    release: region.ampeg_release,
+    depth: 100
+  })
+  console.log(this.ampeg)
+  this.ampeg.connect(this.amp.gain)
+
   this.sourceNode = audioContext.createBufferSource()
   this.sourceNode.buffer = buffer
 
   var playbackRate = pitchToFreq(noteOn.pitch) / pitchToFreq(region.pitch_keycenter)
   this.sourceNode.playbackRate.value = playbackRate
-  console.log(playbackRate)
 
-  this.sourceNode.connect(this.gainNode)
+  this.sourceNode.connect(this.amp)
 }
 
 model.prototype.start = function(){
+  this.ampeg.trigger()
   this.sourceNode.start(0)
 }
 
 model.prototype.stop = function(){
-  console.log("stopping")
-  this.sourceNode.stop(0)
+  this.ampeg.triggerRelease()
 }
 
 model.prototype.connect = function(destination, output){
-  this.gainNode.connect(destination, output)
+  this.amp.connect(destination, output)
 }
 
 model.prototype.disconnect = function(output){
-  this.gainNode.disconnect(output)
+  this.amp.disconnect(output)
 }
 
 module.exports = model
 
-},{}],6:[function(_dereq_,module,exports){
+},{"./envelope_generator":5}],7:[function(_dereq_,module,exports){
 var BufferLoader = _dereq_("./buffer_loader")
   , Voice = _dereq_("./voice")
   , _ = _dereq_("underscore")
@@ -1488,13 +1549,14 @@ player.prototype.onBuffersLoaded = function(buffers){
   _(this.samples).each(function(url, i){
     self.buffers[url] = buffers[i]
   })
+
+  console.log("instrument.ready")
 }
 
 player.prototype.play = function(region, noteOn){
   var buffer = this.buffers[region.sample]
 
   if (noteOn.velocity != 0) {
-    console.log(noteOn.pitch, region.pitch_keycenter, region.sample)
     var voice = new Voice(buffer, region, noteOn, this.context)
     if (region.trigger == "attack") {
       this.voicesToRelease[noteOn.pitch] = voice
@@ -1510,7 +1572,7 @@ player.prototype.play = function(region, noteOn){
 
 module.exports = player
 
-},{"./buffer_loader":4,"./voice":5,"underscore":2}],7:[function(_dereq_,module,exports){
+},{"./buffer_loader":4,"./voice":6,"underscore":2}],8:[function(_dereq_,module,exports){
 var  Region = _dereq_("./region")
   , NullSynth = _dereq_("./null_synth")
   , _ = _dereq_("underscore")
@@ -1601,13 +1663,13 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./null_synth":8,"./region":11,"underscore":2}],8:[function(_dereq_,module,exports){
+},{"./null_synth":9,"./region":12,"underscore":2}],9:[function(_dereq_,module,exports){
 model = function(opts){
 }
 
 module.exports = model
 
-},{}],9:[function(_dereq_,module,exports){
+},{}],10:[function(_dereq_,module,exports){
 var  _ = _dereq_("underscore")
 
 var MAX_INT = 4294967296
@@ -2250,11 +2312,6 @@ var defaults = {
     min: 0,
     max: 100
   },
-  ampeg_depth: {
-    value: 0,
-    min: -12000,
-    max: 12000
-  },
   ampeg_vel2delay: {
     value: 0,
     min: -100,
@@ -2802,7 +2859,7 @@ Parameter.defaultValues = defaultValues
 
 module.exports = Parameter
 
-},{"underscore":2}],10:[function(_dereq_,module,exports){
+},{"underscore":2}],11:[function(_dereq_,module,exports){
 module.exports = (function() {
   /*
    * Generated by PEG.js 0.8.0.
@@ -7421,7 +7478,7 @@ module.exports = (function() {
   };
 })();
 
-},{}],11:[function(_dereq_,module,exports){
+},{}],12:[function(_dereq_,module,exports){
 var  Parameter = _dereq_("./parameter")
   , _ = _dereq_("underscore")
 
@@ -7447,7 +7504,7 @@ Region = function(opts){
 
 module.exports = Region
 
-},{"./parameter":9,"underscore":2}],12:[function(_dereq_,module,exports){
+},{"./parameter":10,"underscore":2}],13:[function(_dereq_,module,exports){
 var sfz = {}
   , Parser = _dereq_("./parser")
 
@@ -7463,6 +7520,6 @@ sfz.parse = function(str, driver, audioContext){
 
 module.exports = sfz
 
-},{"./instrument":7,"./parser":10}]},{},[1])
+},{"./instrument":8,"./parser":11}]},{},[1])
 (1)
 });

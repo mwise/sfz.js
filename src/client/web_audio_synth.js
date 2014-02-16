@@ -23,13 +23,14 @@ player.prototype.onBuffersLoaded = function(buffers){
   _(this.samples).each(function(url, i){
     self.buffers[url] = buffers[i]
   })
+
+  console.log("instrument.ready")
 }
 
 player.prototype.play = function(region, noteOn){
   var buffer = this.buffers[region.sample]
 
   if (noteOn.velocity != 0) {
-    console.log(noteOn.pitch, region.pitch_keycenter, region.sample)
     var voice = new Voice(buffer, region, noteOn, this.context)
     if (region.trigger == "attack") {
       this.voicesToRelease[noteOn.pitch] = voice

@@ -640,11 +640,6 @@ var defaults = {
     min: 0,
     max: 100
   },
-  ampeg_depth: {
-    value: 0,
-    min: -12000,
-    max: 12000
-  },
   ampeg_vel2delay: {
     value: 0,
     min: -100,
