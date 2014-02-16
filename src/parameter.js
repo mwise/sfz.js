@@ -4,19 +4,18 @@ var MAX_INT = 4294967296
   , MAX_BEND = 9600
 
 Parameter = function(opts){
-
 }
 
 var defaults = {
   lochan: {
-    value: 1,
-    min: 1,
-    max: 16
+    value: 0,
+    min: 0,
+    max: 15
   },
   hichan: {
-    value: 16,
-    min: 1,
-    max: 16
+    value: 15,
+    min: 0,
+    max: 15
   },
   lokey: {
     value: 0,
@@ -215,7 +214,7 @@ var defaults = {
     max: 100
   },
   pitch_keycenter: {
-    value: 0,
+    value: 60,
     min: -127,
     max: 127
   },
@@ -800,178 +799,177 @@ var defaults = {
     value: 0,
     min: 0,
     max: 100
-  },
-
+  }
 
 }
 
-_(128).times(function(i){
-  defaults["on_locc" + i] = {
-    value: -1,
-    min: 0,
-    max: 127
-  }
-  defaults["on_hicc" + i] = {
-    value: -1,
-    min: 0,
-    max: 127
-  }
-  defaults["delay_cc" + i] = {
-    value: 0,
-    min: 0,
-    max: 100
-  }
-  defaults["offset_cc" + i] = {
-    value: 0,
-    min: 0,
-    max: MAX_INT
-  }
-  defaults["pitchlfo_depthcc" + i] = {
-    value: 0,
-    min: -1200,
-    max: 1200
-  },
-  defaults["pitchlfo_freqcc" + i] = {
-    value: 0,
-    min: -200,
-    max: 200
-  }
-  defaults["cutoff_cc" + i] = {
-    value: 0,
-    min: -MAX_BEND,
-    max: MAX_BEND
-  }
-  defaults["fillfo_depthcc" + i] = {
-    value: 0,
-    min: -1200,
-    max: 1200
-  }
-  defaults["fillfo_freqcc" + i] = {
-    value: 0,
-    min: -200,
-    max: 200
-  }
-  defaults["amp_velcurve_" + i] = {
-    value: 1,
-    min: 0,
-    max: 1
-  }
-  defaults["gain_cc" + i] = {
-    value: 0,
-    min: -144,
-    max: 48
-  }
-  defaults["xfin_locc" + i] = {
-    value: 0,
-    min: 0,
-    max: 127
-  }
-  defaults["xfin_hicc" + i] = {
-    value: 0,
-    min: 0,
-    max: 127
-  }
-  defaults["xfout_locc" + i] = {
-    value: 0,
-    min: 0,
-    max: 127
-  }
-  defaults["xfout_hicc" + i] = {
-    value: 0,
-    min: 0,
-    max: 127
-  }
-  defaults["ampeg_delaycc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_startcc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_attackcc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_holdcc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_decaycc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_sustaincc" + i] = {
-    value: 100,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_releasecc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["amplfo_depthcc" + i] = {
-    value: 0,
-    min: -10,
-    max: 10
-  }
-  defaults["amplfo_freqcc" + i] = {
-    value: 0,
-    min: -200,
-    max: 200
-  }
-  defaults["eq1_freqcc" + i] = {
-    value: 0,
-    min: -30000,
-    max: 30000
-  }
-  defaults["eq2_freqcc" + i] = {
-    value: 0,
-    min: -30000,
-    max: 30000
-  }
-  defaults["eq3_freqcc" + i] = {
-    value: 0,
-    min: -30000,
-    max: 30000
-  }
-  defaults["eq1_bwcc" + i] = {
-    value: 0,
-    min: -4,
-    max: 4
-  }
-  defaults["eq2_bwcc" + i] = {
-    value: 0,
-    min: -4,
-    max: 4
-  }
-  defaults["eq3_bwcc" + i] = {
-    value: 0,
-    min: -4,
-    max: 4
-  }
-  defaults["eq1_gaincc" + i] = {
-    value: 0,
-    min: -96,
-    max: 48
-  }
-  defaults["eq2_gaincc" + i] = {
-    value: 0,
-    min: -96,
-    max: 48
-  }
-  defaults["eq3_gaincc" + i] = {
-    value: 0,
-    min: -96,
-    max: 48
-  }
-})
+//_(128).times(function(i){
+  //defaults["on_locc" + i] = {
+    //value: -1,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["on_hicc" + i] = {
+    //value: -1,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["delay_cc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 100
+  //}
+  //defaults["offset_cc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: MAX_INT
+  //}
+  //defaults["pitchlfo_depthcc" + i] = {
+    //value: 0,
+    //min: -1200,
+    //max: 1200
+  //},
+  //defaults["pitchlfo_freqcc" + i] = {
+    //value: 0,
+    //min: -200,
+    //max: 200
+  //}
+  //defaults["cutoff_cc" + i] = {
+    //value: 0,
+    //min: -MAX_BEND,
+    //max: MAX_BEND
+  //}
+  //defaults["fillfo_depthcc" + i] = {
+    //value: 0,
+    //min: -1200,
+    //max: 1200
+  //}
+  //defaults["fillfo_freqcc" + i] = {
+    //value: 0,
+    //min: -200,
+    //max: 200
+  //}
+  //defaults["amp_velcurve_" + i] = {
+    //value: 1,
+    //min: 0,
+    //max: 1
+  //}
+  //defaults["gain_cc" + i] = {
+    //value: 0,
+    //min: -144,
+    //max: 48
+  //}
+  //defaults["xfin_locc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["xfin_hicc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["xfout_locc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["xfout_hicc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["ampeg_delaycc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_startcc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_attackcc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_holdcc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_decaycc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_sustaincc" + i] = {
+    //value: 100,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_releasecc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["amplfo_depthcc" + i] = {
+    //value: 0,
+    //min: -10,
+    //max: 10
+  //}
+  //defaults["amplfo_freqcc" + i] = {
+    //value: 0,
+    //min: -200,
+    //max: 200
+  //}
+  //defaults["eq1_freqcc" + i] = {
+    //value: 0,
+    //min: -30000,
+    //max: 30000
+  //}
+  //defaults["eq2_freqcc" + i] = {
+    //value: 0,
+    //min: -30000,
+    //max: 30000
+  //}
+  //defaults["eq3_freqcc" + i] = {
+    //value: 0,
+    //min: -30000,
+    //max: 30000
+  //}
+  //defaults["eq1_bwcc" + i] = {
+    //value: 0,
+    //min: -4,
+    //max: 4
+  //}
+  //defaults["eq2_bwcc" + i] = {
+    //value: 0,
+    //min: -4,
+    //max: 4
+  //}
+  //defaults["eq3_bwcc" + i] = {
+    //value: 0,
+    //min: -4,
+    //max: 4
+  //}
+  //defaults["eq1_gaincc" + i] = {
+    //value: 0,
+    //min: -96,
+    //max: 48
+  //}
+  //defaults["eq2_gaincc" + i] = {
+    //value: 0,
+    //min: -96,
+    //max: 48
+  //}
+  //defaults["eq3_gaincc" + i] = {
+    //value: 0,
+    //min: -96,
+    //max: 48
+  //}
+//})
 
 Parameter.defaults = defaults
 

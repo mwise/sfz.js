@@ -23,19 +23,22 @@ Instrument
         if (elements[i] == '<group>') {
           groups.push({})
         } else if (elements[i] == "<region>") {
+          var region = {}
           if (groups.length) {
-            regions.push(groups[groups.length - 1])
-          } else {
-            regions.push({})
+            extend(region, groups[groups.length - 1])
           }
+          regions.push(region)
         } else {
           var param = elements[i]
             , name = param[0]
             , value = param[1]
+
+          //console.log(param)
           if (groups.length) {
             extend(groups[groups.length - 1], elements[i])
           }
           if (regions.length) {
+            //console.log("extending", regions[regions.length - 1])
             extend(regions[regions.length - 1], elements[i])
           }
         }
@@ -75,7 +78,7 @@ Group
 OpcodeDirective
   = "sample=" value:Filepath { return { sample: value } }
   / "key=" value:MidiNoteValue {
-    return { lokey: value, hikey: value }
+    return { lokey: value, hikey: value, pitch_keycenter: value }
   }
   / "sw_vel=" value:("current" / "previous") { return { sw_vel: value } }
   / "sw_trigger=" value:(
@@ -441,9 +444,34 @@ SignedDecimalLiteral
  }
 
 MidiNoteName
-  = note:[a-gA-G] accidental:[#b]? octave:SignedInteger {
-    accidental = accidental || ""
-    return note + accidental + octave.join("")
+  = pitch:MidiPitch accidental:MidiAccidental octave:SignedIntegerAsNumber {
+    return (pitch + accidental) + (octave + 1) * 12
+  }
+
+MidiPitch
+  = note:[a-gA-G] {
+    var pitches = {
+      "c": 0,
+      "d": 2,
+      "e": 4,
+      "f": 5,
+      "g": 7,
+      "a": 9,
+      "b": 11
+    }
+    return pitches[note.toLowerCase()]
+  }
+
+MidiAccidental
+  = accidental:[#b]? {
+    switch (accidental) {
+      case "#":
+        return 1
+      case "b":
+        return -1
+      default:
+        return 0
+    }
   }
 
 Filepath

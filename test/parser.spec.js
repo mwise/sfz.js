@@ -122,6 +122,21 @@ describe("parsing", function(){
     })
   })
 
+  context("a string with a one groups and two regions", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse(" \
+        <group> <region> sample=trumpet_pp_c4.wav lokey=b3 hikey=c#4 \
+        <region> sample=trumpet_pp_d#4.wav lokey=d4 hikey=e4")
+    })
+
+    it("has two regions with the correct sample opcodes", function(){
+      expect(this.result.regions).eql([
+        { sample: "trumpet_pp_c4.wav", lokey: 59, hikey: 61 },
+        { sample: "trumpet_pp_d#4.wav", lokey: 62, hikey: 64 }
+      ])
+    })
+  })
+
   describe("opcodes", function(){
 
     beforeEach(function(){
@@ -152,8 +167,14 @@ describe("parsing", function(){
     }
 
     var testMidiNoteOpcode = function(name){
-      testOpcode(name, "2", name, 2)
-      testOpcode(name, "c#4", name, "c#4")
+      //testOpcode(name, "2", name, 2)
+      testOpcode(name, "c-1", name, 0)
+      testOpcode(name, "c3", name, 48)
+      testOpcode(name, "c#3", name, 49)
+      testOpcode(name, "b3", name, 59)
+      testOpcode(name, "c4", name, 60)
+      testOpcode(name, "c#4", name, 61)
+      testOpcode(name, "d4", name, 62)
     }
 
     var testTextOpcode = function(name, options){
@@ -162,8 +183,9 @@ describe("parsing", function(){
       }
     }
 
-    testOpcode("key", "c#4", "lokey", "c#4")
-    testOpcode("key", "c#4", "hikey", "c#4")
+    testOpcode("key", "c#4", "lokey", 61)
+    testOpcode("key", "c#4", "hikey", 61)
+    testOpcode("key", "c#4", "pitch_keycenter", 61)
     testOpcode("key", "1", "lokey", 1)
     testOpcode("key", "1", "hikey", 1)
 

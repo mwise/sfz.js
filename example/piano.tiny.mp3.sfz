@@ -1,0 +1,39 @@
+// ------------------------------
+//  Sonatina Symphonic Orchestra
+// ------------------------------
+//          Grand Piano
+// ------------------------------
+
+<group>
+ampeg_release=1
+hivel=127
+lovel=0
+
+<region>
+sample=Samples\Grand Piano\piano-f-c4.mp3
+lokey=b3
+hikey=c#4
+
+<region>
+sample=Samples\Grand Piano\piano-f-d#4.mp3
+lokey=d4
+hikey=e4
+pitch_keycenter=d#4
+
+<region>
+sample=Samples\Grand Piano\piano-f-f#4.mp3
+lokey=f4
+hikey=g4
+pitch_keycenter=f#4
+
+<region>
+sample=Samples\Grand Piano\piano-f-a4.mp3
+lokey=g#4
+hikey=a#4
+pitch_keycenter=a4
+
+<region>
+sample=Samples\Grand Piano\piano-f-c5.mp3
+lokey=b4
+hikey=c#5
+pitch_keycenter=c5

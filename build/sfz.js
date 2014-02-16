@@ -14,7 +14,7 @@ sfz.load = function(audioContext, url, callback){
 
 module.exports = sfz
 
-},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":5,"./src/sfz":11}],2:[function(_dereq_,module,exports){
+},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":6,"./src/sfz":12}],2:[function(_dereq_,module,exports){
 //     Underscore.js 1.6.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -1425,28 +1425,92 @@ BufferLoader.prototype.load = function(){
 module.exports = BufferLoader
 
 },{}],5:[function(_dereq_,module,exports){
-var BufferLoader = _dereq_("./buffer_loader")
 
-WebAudioSynth = function(instrument, audioContext){
+var pitchToFreq = function(pitch){
+  return Math.pow(2, (pitch-69)/12.0) * 440
+}
+
+var model = function(buffer, region, noteOn, audioContext){
+  //console.log("new voice", buffer, noteOn.pitch, region)
+  this.gainNode = audioContext.createGainNode()
+  this.gainNode.gain.value = .5
+  this.sourceNode = audioContext.createBufferSource()
+  this.sourceNode.buffer = buffer
+
+  var playbackRate = pitchToFreq(noteOn.pitch) / pitchToFreq(region.pitch_keycenter)
+  this.sourceNode.playbackRate.value = playbackRate
+  console.log(noteOn.pitch, region.pitch_keycenter, playbackRate)
+
+  this.sourceNode.connect(this.gainNode)
+}
+
+model.prototype.start = function(){
+  this.sourceNode.start(0)
+}
+
+model.prototype.stop = function(){
+  console.log("stopping")
+  this.sourceNode.stop(0)
+}
+
+model.prototype.connect = function(destination, output){
+  this.gainNode.connect(destination, output)
+}
+
+model.prototype.disconnect = function(output){
+  this.gainNode.disconnect(output)
+}
+
+module.exports = model
+
+},{}],6:[function(_dereq_,module,exports){
+var BufferLoader = _dereq_("./buffer_loader")
+  , Voice = _dereq_("./voice")
+  , _ = _dereq_("underscore")
+
+var player = function(instrument, audioContext){
   this.context = audioContext
   var sampleUrls = instrument.samples()
   this.loadBuffers(sampleUrls)
+  this.voicesToRelease = {}
 }
 
-WebAudioSynth.prototype.loadBuffers = function(urls){
-  console.log("loading ", urls.length, "samples")
+player.prototype.loadBuffers = function(urls){
+  this.samples = urls
+  urls = _(urls).map(function(url){ return encodeURIComponent(url) })
   var loader = new BufferLoader(urls, this.onBuffersLoaded.bind(this), this.context)
   loader.load()
 }
 
-WebAudioSynth.prototype.onBuffersLoaded = function(buffers){
-  console.log("all buffers loaded!", buffers.length)
-  this.buffers = buffers
+player.prototype.onBuffersLoaded = function(buffers){
+  var self = this
+  this.buffers = {}
+
+  _(this.samples).each(function(url, i){
+    self.buffers[url] = buffers[i]
+  })
 }
 
-module.exports = WebAudioSynth
+player.prototype.play = function(region, noteOn){
+  var buffer = this.buffers[region.sample]
 
-},{"./buffer_loader":4}],6:[function(_dereq_,module,exports){
+  if (noteOn.velocity != 0) {
+    var voice = new Voice(buffer, region, noteOn, this.context)
+    if (region.trigger == "attack") {
+      this.voicesToRelease[noteOn.pitch] = voice
+    }
+    voice.connect(this.context.destination)
+    voice.start()
+  } else {
+
+    var voice = this.voicesToRelease[noteOn.pitch]
+    if (voice) voice.stop()
+  }
+}
+
+module.exports = player
+
+},{"./buffer_loader":4,"./voice":5,"underscore":2}],7:[function(_dereq_,module,exports){
 var  Region = _dereq_("./region")
   , NullSynth = _dereq_("./null_synth")
   , _ = _dereq_("underscore")
@@ -1509,6 +1573,8 @@ model.prototype.noteOn = function(channel, pitch, velocity){
     pitch: pitch,
     velocity: velocity
   }
+
+  //console.log("should play", this.regionsToPlay(noteOn, rand).length, "notes")
   _(this.regionsToPlay(noteOn, rand)).each(function(region){
     this.play(region, noteOn)
   }.bind(this))
@@ -1526,34 +1592,41 @@ model.prototype.samples = function(){
   return samples
 }
 
+model.prototype.connect = function(destination, output){
+  this.synth.connect(destination, output)
+}
+
+model.prototype.disconnect = function(output){
+  this.synth.connect(output)
+}
+
 module.exports = model
 
-},{"./null_synth":7,"./region":10,"underscore":2}],7:[function(_dereq_,module,exports){
+},{"./null_synth":8,"./region":11,"underscore":2}],8:[function(_dereq_,module,exports){
 model = function(opts){
 }
 
 module.exports = model
 
-},{}],8:[function(_dereq_,module,exports){
+},{}],9:[function(_dereq_,module,exports){
 var  _ = _dereq_("underscore")
 
 var MAX_INT = 4294967296
   , MAX_BEND = 9600
 
 Parameter = function(opts){
-
 }
 
 var defaults = {
   lochan: {
-    value: 1,
-    min: 1,
-    max: 16
+    value: 0,
+    min: 0,
+    max: 15
   },
   hichan: {
-    value: 16,
-    min: 1,
-    max: 16
+    value: 15,
+    min: 0,
+    max: 15
   },
   lokey: {
     value: 0,
@@ -1752,7 +1825,7 @@ var defaults = {
     max: 100
   },
   pitch_keycenter: {
-    value: 0,
+    value: 60,
     min: -127,
     max: 127
   },
@@ -2337,178 +2410,177 @@ var defaults = {
     value: 0,
     min: 0,
     max: 100
-  },
-
+  }
 
 }
 
-_(128).times(function(i){
-  defaults["on_locc" + i] = {
-    value: -1,
-    min: 0,
-    max: 127
-  }
-  defaults["on_hicc" + i] = {
-    value: -1,
-    min: 0,
-    max: 127
-  }
-  defaults["delay_cc" + i] = {
-    value: 0,
-    min: 0,
-    max: 100
-  }
-  defaults["offset_cc" + i] = {
-    value: 0,
-    min: 0,
-    max: MAX_INT
-  }
-  defaults["pitchlfo_depthcc" + i] = {
-    value: 0,
-    min: -1200,
-    max: 1200
-  },
-  defaults["pitchlfo_freqcc" + i] = {
-    value: 0,
-    min: -200,
-    max: 200
-  }
-  defaults["cutoff_cc" + i] = {
-    value: 0,
-    min: -MAX_BEND,
-    max: MAX_BEND
-  }
-  defaults["fillfo_depthcc" + i] = {
-    value: 0,
-    min: -1200,
-    max: 1200
-  }
-  defaults["fillfo_freqcc" + i] = {
-    value: 0,
-    min: -200,
-    max: 200
-  }
-  defaults["amp_velcurve_" + i] = {
-    value: 1,
-    min: 0,
-    max: 1
-  }
-  defaults["gain_cc" + i] = {
-    value: 0,
-    min: -144,
-    max: 48
-  }
-  defaults["xfin_locc" + i] = {
-    value: 0,
-    min: 0,
-    max: 127
-  }
-  defaults["xfin_hicc" + i] = {
-    value: 0,
-    min: 0,
-    max: 127
-  }
-  defaults["xfout_locc" + i] = {
-    value: 0,
-    min: 0,
-    max: 127
-  }
-  defaults["xfout_hicc" + i] = {
-    value: 0,
-    min: 0,
-    max: 127
-  }
-  defaults["ampeg_delaycc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_startcc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_attackcc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_holdcc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_decaycc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_sustaincc" + i] = {
-    value: 100,
-    min: -100,
-    max: 100
-  }
-  defaults["ampeg_releasecc" + i] = {
-    value: 0,
-    min: -100,
-    max: 100
-  }
-  defaults["amplfo_depthcc" + i] = {
-    value: 0,
-    min: -10,
-    max: 10
-  }
-  defaults["amplfo_freqcc" + i] = {
-    value: 0,
-    min: -200,
-    max: 200
-  }
-  defaults["eq1_freqcc" + i] = {
-    value: 0,
-    min: -30000,
-    max: 30000
-  }
-  defaults["eq2_freqcc" + i] = {
-    value: 0,
-    min: -30000,
-    max: 30000
-  }
-  defaults["eq3_freqcc" + i] = {
-    value: 0,
-    min: -30000,
-    max: 30000
-  }
-  defaults["eq1_bwcc" + i] = {
-    value: 0,
-    min: -4,
-    max: 4
-  }
-  defaults["eq2_bwcc" + i] = {
-    value: 0,
-    min: -4,
-    max: 4
-  }
-  defaults["eq3_bwcc" + i] = {
-    value: 0,
-    min: -4,
-    max: 4
-  }
-  defaults["eq1_gaincc" + i] = {
-    value: 0,
-    min: -96,
-    max: 48
-  }
-  defaults["eq2_gaincc" + i] = {
-    value: 0,
-    min: -96,
-    max: 48
-  }
-  defaults["eq3_gaincc" + i] = {
-    value: 0,
-    min: -96,
-    max: 48
-  }
-})
+//_(128).times(function(i){
+  //defaults["on_locc" + i] = {
+    //value: -1,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["on_hicc" + i] = {
+    //value: -1,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["delay_cc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 100
+  //}
+  //defaults["offset_cc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: MAX_INT
+  //}
+  //defaults["pitchlfo_depthcc" + i] = {
+    //value: 0,
+    //min: -1200,
+    //max: 1200
+  //},
+  //defaults["pitchlfo_freqcc" + i] = {
+    //value: 0,
+    //min: -200,
+    //max: 200
+  //}
+  //defaults["cutoff_cc" + i] = {
+    //value: 0,
+    //min: -MAX_BEND,
+    //max: MAX_BEND
+  //}
+  //defaults["fillfo_depthcc" + i] = {
+    //value: 0,
+    //min: -1200,
+    //max: 1200
+  //}
+  //defaults["fillfo_freqcc" + i] = {
+    //value: 0,
+    //min: -200,
+    //max: 200
+  //}
+  //defaults["amp_velcurve_" + i] = {
+    //value: 1,
+    //min: 0,
+    //max: 1
+  //}
+  //defaults["gain_cc" + i] = {
+    //value: 0,
+    //min: -144,
+    //max: 48
+  //}
+  //defaults["xfin_locc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["xfin_hicc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["xfout_locc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["xfout_hicc" + i] = {
+    //value: 0,
+    //min: 0,
+    //max: 127
+  //}
+  //defaults["ampeg_delaycc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_startcc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_attackcc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_holdcc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_decaycc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_sustaincc" + i] = {
+    //value: 100,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["ampeg_releasecc" + i] = {
+    //value: 0,
+    //min: -100,
+    //max: 100
+  //}
+  //defaults["amplfo_depthcc" + i] = {
+    //value: 0,
+    //min: -10,
+    //max: 10
+  //}
+  //defaults["amplfo_freqcc" + i] = {
+    //value: 0,
+    //min: -200,
+    //max: 200
+  //}
+  //defaults["eq1_freqcc" + i] = {
+    //value: 0,
+    //min: -30000,
+    //max: 30000
+  //}
+  //defaults["eq2_freqcc" + i] = {
+    //value: 0,
+    //min: -30000,
+    //max: 30000
+  //}
+  //defaults["eq3_freqcc" + i] = {
+    //value: 0,
+    //min: -30000,
+    //max: 30000
+  //}
+  //defaults["eq1_bwcc" + i] = {
+    //value: 0,
+    //min: -4,
+    //max: 4
+  //}
+  //defaults["eq2_bwcc" + i] = {
+    //value: 0,
+    //min: -4,
+    //max: 4
+  //}
+  //defaults["eq3_bwcc" + i] = {
+    //value: 0,
+    //min: -4,
+    //max: 4
+  //}
+  //defaults["eq1_gaincc" + i] = {
+    //value: 0,
+    //min: -96,
+    //max: 48
+  //}
+  //defaults["eq2_gaincc" + i] = {
+    //value: 0,
+    //min: -96,
+    //max: 48
+  //}
+  //defaults["eq3_gaincc" + i] = {
+    //value: 0,
+    //min: -96,
+    //max: 48
+  //}
+//})
 
 Parameter.defaults = defaults
 
@@ -2731,7 +2803,7 @@ Parameter.defaultValues = defaultValues
 
 module.exports = Parameter
 
-},{"underscore":2}],9:[function(_dereq_,module,exports){
+},{"underscore":2}],10:[function(_dereq_,module,exports){
 module.exports = (function() {
   /*
    * Generated by PEG.js 0.8.0.
@@ -2790,19 +2862,22 @@ module.exports = (function() {
                 if (elements[i] == '<group>') {
                   groups.push({})
                 } else if (elements[i] == "<region>") {
+                  var region = {}
                   if (groups.length) {
-                    regions.push(groups[groups.length - 1])
-                  } else {
-                    regions.push({})
+                    extend(region, groups[groups.length - 1])
                   }
+                  regions.push(region)
                 } else {
                   var param = elements[i]
                     , name = param[0]
                     , value = param[1]
+
+                  //console.log(param)
                   if (groups.length) {
                     extend(groups[groups.length - 1], elements[i])
                   }
                   if (regions.length) {
+                    //console.log("extending", regions[regions.length - 1])
                     extend(regions[regions.length - 1], elements[i])
                   }
                 }
@@ -2831,7 +2906,7 @@ module.exports = (function() {
         peg$c14 = "key=",
         peg$c15 = { type: "literal", value: "key=", description: "\"key=\"" },
         peg$c16 = function(value) {
-            return { lokey: value, hikey: value }
+            return { lokey: value, hikey: value, pitch_keycenter: value }
           },
         peg$c17 = "sw_vel=",
         peg$c18 = { type: "literal", value: "sw_vel=", description: "\"sw_vel=\"" },
@@ -3318,47 +3393,68 @@ module.exports = (function() {
            sign = sign || ""
           return parseFloat(sign + decimal)
          },
-        peg$c490 = /^[a-gA-G]/,
-        peg$c491 = { type: "class", value: "[a-gA-G]", description: "[a-gA-G]" },
-        peg$c492 = /^[#b]/,
-        peg$c493 = { type: "class", value: "[#b]", description: "[#b]" },
-        peg$c494 = function(note, accidental, octave) {
-            accidental = accidental || ""
-            return note + accidental + octave.join("")
+        peg$c490 = function(pitch, accidental, octave) {
+            return (pitch + accidental) + (octave + 1) * 12
           },
-        peg$c495 = function(name, ext) { return name + ext },
-        peg$c496 = void 0,
-        peg$c497 = function(c) { return c },
-        peg$c498 = function(chars) {
+        peg$c491 = /^[a-gA-G]/,
+        peg$c492 = { type: "class", value: "[a-gA-G]", description: "[a-gA-G]" },
+        peg$c493 = function(note) {
+            var pitches = {
+              "c": 0,
+              "d": 2,
+              "e": 4,
+              "f": 5,
+              "g": 7,
+              "a": 9,
+              "b": 11
+            }
+            return pitches[note.toLowerCase()]
+          },
+        peg$c494 = /^[#b]/,
+        peg$c495 = { type: "class", value: "[#b]", description: "[#b]" },
+        peg$c496 = function(accidental) {
+            switch (accidental) {
+              case "#":
+                return 1
+              case "b":
+                return -1
+              default:
+                return 0
+            }
+          },
+        peg$c497 = function(name, ext) { return name + ext },
+        peg$c498 = void 0,
+        peg$c499 = function(c) { return c },
+        peg$c500 = function(chars) {
            return chars.join("")
          },
-        peg$c499 = ".wav",
-        peg$c500 = { type: "literal", value: ".wav", description: "\".wav\"" },
-        peg$c501 = ".ogg",
-        peg$c502 = { type: "literal", value: ".ogg", description: "\".ogg\"" },
-        peg$c503 = ".mp3",
-        peg$c504 = { type: "literal", value: ".mp3", description: "\".mp3\"" },
-        peg$c505 = { type: "other", description: "whitespace" },
-        peg$c506 = /^[\t\x0B\f \xA0\uFEFF]/,
-        peg$c507 = { type: "class", value: "[\\t\\x0B\\f \\xA0\\uFEFF]", description: "[\\t\\x0B\\f \\xA0\\uFEFF]" },
-        peg$c508 = /^[ \xA0\u1680\u180E\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000]/,
-        peg$c509 = { type: "class", value: "[ \\xA0\\u1680\\u180E\\u2000\\u2001\\u2002\\u2003\\u2004\\u2005\\u2006\\u2007\\u2008\\u2009\\u200A\\u202F\\u205F\\u3000]", description: "[ \\xA0\\u1680\\u180E\\u2000\\u2001\\u2002\\u2003\\u2004\\u2005\\u2006\\u2007\\u2008\\u2009\\u200A\\u202F\\u205F\\u3000]" },
-        peg$c510 = /^[\n\r\u2028\u2029]/,
-        peg$c511 = { type: "class", value: "[\\n\\r\\u2028\\u2029]", description: "[\\n\\r\\u2028\\u2029]" },
-        peg$c512 = { type: "other", description: "end of line" },
-        peg$c513 = "\n",
-        peg$c514 = { type: "literal", value: "\n", description: "\"\\n\"" },
-        peg$c515 = "\r\n",
-        peg$c516 = { type: "literal", value: "\r\n", description: "\"\\r\\n\"" },
-        peg$c517 = "\r",
-        peg$c518 = { type: "literal", value: "\r", description: "\"\\r\"" },
-        peg$c519 = "\u2028",
-        peg$c520 = { type: "literal", value: "\u2028", description: "\"\\u2028\"" },
-        peg$c521 = "\u2029",
-        peg$c522 = { type: "literal", value: "\u2029", description: "\"\\u2029\"" },
-        peg$c523 = { type: "other", description: "comment" },
-        peg$c524 = "/",
-        peg$c525 = { type: "literal", value: "/", description: "\"/\"" },
+        peg$c501 = ".wav",
+        peg$c502 = { type: "literal", value: ".wav", description: "\".wav\"" },
+        peg$c503 = ".ogg",
+        peg$c504 = { type: "literal", value: ".ogg", description: "\".ogg\"" },
+        peg$c505 = ".mp3",
+        peg$c506 = { type: "literal", value: ".mp3", description: "\".mp3\"" },
+        peg$c507 = { type: "other", description: "whitespace" },
+        peg$c508 = /^[\t\x0B\f \xA0\uFEFF]/,
+        peg$c509 = { type: "class", value: "[\\t\\x0B\\f \\xA0\\uFEFF]", description: "[\\t\\x0B\\f \\xA0\\uFEFF]" },
+        peg$c510 = /^[ \xA0\u1680\u180E\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000]/,
+        peg$c511 = { type: "class", value: "[ \\xA0\\u1680\\u180E\\u2000\\u2001\\u2002\\u2003\\u2004\\u2005\\u2006\\u2007\\u2008\\u2009\\u200A\\u202F\\u205F\\u3000]", description: "[ \\xA0\\u1680\\u180E\\u2000\\u2001\\u2002\\u2003\\u2004\\u2005\\u2006\\u2007\\u2008\\u2009\\u200A\\u202F\\u205F\\u3000]" },
+        peg$c512 = /^[\n\r\u2028\u2029]/,
+        peg$c513 = { type: "class", value: "[\\n\\r\\u2028\\u2029]", description: "[\\n\\r\\u2028\\u2029]" },
+        peg$c514 = { type: "other", description: "end of line" },
+        peg$c515 = "\n",
+        peg$c516 = { type: "literal", value: "\n", description: "\"\\n\"" },
+        peg$c517 = "\r\n",
+        peg$c518 = { type: "literal", value: "\r\n", description: "\"\\r\\n\"" },
+        peg$c519 = "\r",
+        peg$c520 = { type: "literal", value: "\r", description: "\"\\r\"" },
+        peg$c521 = "\u2028",
+        peg$c522 = { type: "literal", value: "\u2028", description: "\"\\u2028\"" },
+        peg$c523 = "\u2029",
+        peg$c524 = { type: "literal", value: "\u2029", description: "\"\\u2029\"" },
+        peg$c525 = { type: "other", description: "comment" },
+        peg$c526 = "/",
+        peg$c527 = { type: "literal", value: "/", description: "\"/\"" },
 
         peg$currPos          = 0,
         peg$reportedPos      = 0,
@@ -6771,29 +6867,14 @@ module.exports = (function() {
       var s0, s1, s2, s3;
 
       s0 = peg$currPos;
-      if (peg$c490.test(input.charAt(peg$currPos))) {
-        s1 = input.charAt(peg$currPos);
-        peg$currPos++;
-      } else {
-        s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c491); }
-      }
+      s1 = peg$parseMidiPitch();
       if (s1 !== peg$FAILED) {
-        if (peg$c492.test(input.charAt(peg$currPos))) {
-          s2 = input.charAt(peg$currPos);
-          peg$currPos++;
-        } else {
-          s2 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c493); }
-        }
-        if (s2 === peg$FAILED) {
-          s2 = peg$c2;
-        }
+        s2 = peg$parseMidiAccidental();
         if (s2 !== peg$FAILED) {
-          s3 = peg$parseSignedInteger();
+          s3 = peg$parseSignedIntegerAsNumber();
           if (s3 !== peg$FAILED) {
             peg$reportedPos = s0;
-            s1 = peg$c494(s1, s2, s3);
+            s1 = peg$c490(s1, s2, s3);
             s0 = s1;
           } else {
             peg$currPos = s0;
@@ -6811,6 +6892,49 @@ module.exports = (function() {
       return s0;
     }
 
+    function peg$parseMidiPitch() {
+      var s0, s1;
+
+      s0 = peg$currPos;
+      if (peg$c491.test(input.charAt(peg$currPos))) {
+        s1 = input.charAt(peg$currPos);
+        peg$currPos++;
+      } else {
+        s1 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c492); }
+      }
+      if (s1 !== peg$FAILED) {
+        peg$reportedPos = s0;
+        s1 = peg$c493(s1);
+      }
+      s0 = s1;
+
+      return s0;
+    }
+
+    function peg$parseMidiAccidental() {
+      var s0, s1;
+
+      s0 = peg$currPos;
+      if (peg$c494.test(input.charAt(peg$currPos))) {
+        s1 = input.charAt(peg$currPos);
+        peg$currPos++;
+      } else {
+        s1 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c495); }
+      }
+      if (s1 === peg$FAILED) {
+        s1 = peg$c2;
+      }
+      if (s1 !== peg$FAILED) {
+        peg$reportedPos = s0;
+        s1 = peg$c496(s1);
+      }
+      s0 = s1;
+
+      return s0;
+    }
+
     function peg$parseFilepath() {
       var s0, s1, s2;
 
@@ -6820,7 +6944,7 @@ module.exports = (function() {
         s2 = peg$parseFileExtension();
         if (s2 !== peg$FAILED) {
           peg$reportedPos = s0;
-          s1 = peg$c495(s1, s2);
+          s1 = peg$c497(s1, s2);
           s0 = s1;
         } else {
           peg$currPos = s0;
@@ -6845,7 +6969,7 @@ module.exports = (function() {
       s4 = peg$parseFileExtension();
       peg$silentFails--;
       if (s4 === peg$FAILED) {
-        s3 = peg$c496;
+        s3 = peg$c498;
       } else {
         peg$currPos = s3;
         s3 = peg$c0;
@@ -6854,7 +6978,7 @@ module.exports = (function() {
         s4 = peg$parseSourceCharacter();
         if (s4 !== peg$FAILED) {
           peg$reportedPos = s2;
-          s3 = peg$c497(s4);
+          s3 = peg$c499(s4);
           s2 = s3;
         } else {
           peg$currPos = s2;
@@ -6873,7 +6997,7 @@ module.exports = (function() {
           s4 = peg$parseFileExtension();
           peg$silentFails--;
           if (s4 === peg$FAILED) {
-            s3 = peg$c496;
+            s3 = peg$c498;
           } else {
             peg$currPos = s3;
             s3 = peg$c0;
@@ -6882,7 +7006,7 @@ module.exports = (function() {
             s4 = peg$parseSourceCharacter();
             if (s4 !== peg$FAILED) {
               peg$reportedPos = s2;
-              s3 = peg$c497(s4);
+              s3 = peg$c499(s4);
               s2 = s3;
             } else {
               peg$currPos = s2;
@@ -6898,7 +7022,7 @@ module.exports = (function() {
       }
       if (s1 !== peg$FAILED) {
         peg$reportedPos = s0;
-        s1 = peg$c498(s1);
+        s1 = peg$c500(s1);
       }
       s0 = s1;
 
@@ -6908,28 +7032,28 @@ module.exports = (function() {
     function peg$parseFileExtension() {
       var s0;
 
-      if (input.substr(peg$currPos, 4) === peg$c499) {
-        s0 = peg$c499;
+      if (input.substr(peg$currPos, 4) === peg$c501) {
+        s0 = peg$c501;
         peg$currPos += 4;
       } else {
         s0 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c500); }
+        if (peg$silentFails === 0) { peg$fail(peg$c502); }
       }
       if (s0 === peg$FAILED) {
-        if (input.substr(peg$currPos, 4) === peg$c501) {
-          s0 = peg$c501;
+        if (input.substr(peg$currPos, 4) === peg$c503) {
+          s0 = peg$c503;
           peg$currPos += 4;
         } else {
           s0 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c502); }
+          if (peg$silentFails === 0) { peg$fail(peg$c504); }
         }
         if (s0 === peg$FAILED) {
-          if (input.substr(peg$currPos, 4) === peg$c503) {
-            s0 = peg$c503;
+          if (input.substr(peg$currPos, 4) === peg$c505) {
+            s0 = peg$c505;
             peg$currPos += 4;
           } else {
             s0 = peg$FAILED;
-            if (peg$silentFails === 0) { peg$fail(peg$c504); }
+            if (peg$silentFails === 0) { peg$fail(peg$c506); }
           }
         }
       }
@@ -6941,28 +7065,6 @@ module.exports = (function() {
       var s0, s1;
 
       peg$silentFails++;
-      if (peg$c506.test(input.charAt(peg$currPos))) {
-        s0 = input.charAt(peg$currPos);
-        peg$currPos++;
-      } else {
-        s0 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c507); }
-      }
-      if (s0 === peg$FAILED) {
-        s0 = peg$parseZs();
-      }
-      peg$silentFails--;
-      if (s0 === peg$FAILED) {
-        s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c505); }
-      }
-
-      return s0;
-    }
-
-    function peg$parseZs() {
-      var s0;
-
       if (peg$c508.test(input.charAt(peg$currPos))) {
         s0 = input.charAt(peg$currPos);
         peg$currPos++;
@@ -6970,11 +7072,19 @@ module.exports = (function() {
         s0 = peg$FAILED;
         if (peg$silentFails === 0) { peg$fail(peg$c509); }
       }
+      if (s0 === peg$FAILED) {
+        s0 = peg$parseZs();
+      }
+      peg$silentFails--;
+      if (s0 === peg$FAILED) {
+        s1 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c507); }
+      }
 
       return s0;
     }
 
-    function peg$parseLineTerminator() {
+    function peg$parseZs() {
       var s0;
 
       if (peg$c510.test(input.charAt(peg$currPos))) {
@@ -6988,48 +7098,62 @@ module.exports = (function() {
       return s0;
     }
 
+    function peg$parseLineTerminator() {
+      var s0;
+
+      if (peg$c512.test(input.charAt(peg$currPos))) {
+        s0 = input.charAt(peg$currPos);
+        peg$currPos++;
+      } else {
+        s0 = peg$FAILED;
+        if (peg$silentFails === 0) { peg$fail(peg$c513); }
+      }
+
+      return s0;
+    }
+
     function peg$parseLineTerminatorSequence() {
       var s0, s1;
 
       peg$silentFails++;
       if (input.charCodeAt(peg$currPos) === 10) {
-        s0 = peg$c513;
+        s0 = peg$c515;
         peg$currPos++;
       } else {
         s0 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c514); }
+        if (peg$silentFails === 0) { peg$fail(peg$c516); }
       }
       if (s0 === peg$FAILED) {
-        if (input.substr(peg$currPos, 2) === peg$c515) {
-          s0 = peg$c515;
+        if (input.substr(peg$currPos, 2) === peg$c517) {
+          s0 = peg$c517;
           peg$currPos += 2;
         } else {
           s0 = peg$FAILED;
-          if (peg$silentFails === 0) { peg$fail(peg$c516); }
+          if (peg$silentFails === 0) { peg$fail(peg$c518); }
         }
         if (s0 === peg$FAILED) {
           if (input.charCodeAt(peg$currPos) === 13) {
-            s0 = peg$c517;
+            s0 = peg$c519;
             peg$currPos++;
           } else {
             s0 = peg$FAILED;
-            if (peg$silentFails === 0) { peg$fail(peg$c518); }
+            if (peg$silentFails === 0) { peg$fail(peg$c520); }
           }
           if (s0 === peg$FAILED) {
             if (input.charCodeAt(peg$currPos) === 8232) {
-              s0 = peg$c519;
+              s0 = peg$c521;
               peg$currPos++;
             } else {
               s0 = peg$FAILED;
-              if (peg$silentFails === 0) { peg$fail(peg$c520); }
+              if (peg$silentFails === 0) { peg$fail(peg$c522); }
             }
             if (s0 === peg$FAILED) {
               if (input.charCodeAt(peg$currPos) === 8233) {
-                s0 = peg$c521;
+                s0 = peg$c523;
                 peg$currPos++;
               } else {
                 s0 = peg$FAILED;
-                if (peg$silentFails === 0) { peg$fail(peg$c522); }
+                if (peg$silentFails === 0) { peg$fail(peg$c524); }
               }
             }
           }
@@ -7038,7 +7162,7 @@ module.exports = (function() {
       peg$silentFails--;
       if (s0 === peg$FAILED) {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c512); }
+        if (peg$silentFails === 0) { peg$fail(peg$c514); }
       }
 
       return s0;
@@ -7052,7 +7176,7 @@ module.exports = (function() {
       peg$silentFails--;
       if (s0 === peg$FAILED) {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c523); }
+        if (peg$silentFails === 0) { peg$fail(peg$c525); }
       }
 
       return s0;
@@ -7063,11 +7187,11 @@ module.exports = (function() {
 
       s0 = peg$currPos;
       if (input.charCodeAt(peg$currPos) === 47) {
-        s1 = peg$c524;
+        s1 = peg$c526;
         peg$currPos++;
       } else {
         s1 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$c525); }
+        if (peg$silentFails === 0) { peg$fail(peg$c527); }
       }
       if (s1 !== peg$FAILED) {
         s2 = [];
@@ -7077,7 +7201,7 @@ module.exports = (function() {
         s5 = peg$parseLineTerminator();
         peg$silentFails--;
         if (s5 === peg$FAILED) {
-          s4 = peg$c496;
+          s4 = peg$c498;
         } else {
           peg$currPos = s4;
           s4 = peg$c0;
@@ -7103,7 +7227,7 @@ module.exports = (function() {
           s5 = peg$parseLineTerminator();
           peg$silentFails--;
           if (s5 === peg$FAILED) {
-            s4 = peg$c496;
+            s4 = peg$c498;
           } else {
             peg$currPos = s4;
             s4 = peg$c0;
@@ -7229,7 +7353,7 @@ module.exports = (function() {
       }
       peg$silentFails--;
       if (s1 === peg$FAILED) {
-        s0 = peg$c496;
+        s0 = peg$c498;
       } else {
         peg$currPos = s0;
         s0 = peg$c0;
@@ -7301,7 +7425,7 @@ module.exports = (function() {
   };
 })();
 
-},{}],10:[function(_dereq_,module,exports){
+},{}],11:[function(_dereq_,module,exports){
 var  Parameter = _dereq_("./parameter")
   , _ = _dereq_("underscore")
 
@@ -7327,7 +7451,7 @@ Region = function(opts){
 
 module.exports = Region
 
-},{"./parameter":8,"underscore":2}],11:[function(_dereq_,module,exports){
+},{"./parameter":9,"underscore":2}],12:[function(_dereq_,module,exports){
 var sfz = {}
   , Parser = _dereq_("./parser")
 
@@ -7343,6 +7467,6 @@ sfz.parse = function(str, driver, audioContext){
 
 module.exports = sfz
 
-},{"./instrument":6,"./parser":9}]},{},[1])
+},{"./instrument":7,"./parser":10}]},{},[1])
 (1)
 });

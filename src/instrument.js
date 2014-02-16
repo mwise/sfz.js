@@ -60,6 +60,8 @@ model.prototype.noteOn = function(channel, pitch, velocity){
     pitch: pitch,
     velocity: velocity
   }
+
+  //console.log("should play", this.regionsToPlay(noteOn, rand).length, "notes")
   _(this.regionsToPlay(noteOn, rand)).each(function(region){
     this.play(region, noteOn)
   }.bind(this))
@@ -75,6 +77,14 @@ model.prototype.samples = function(){
     if (region.sample) samples.push(region.sample)
   })
   return samples
+}
+
+model.prototype.connect = function(destination, output){
+  this.synth.connect(destination, output)
+}
+
+model.prototype.disconnect = function(output){
+  this.synth.connect(output)
 }
 
 module.exports = model
