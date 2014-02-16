@@ -16,9 +16,9 @@ var model = function(buffer, region, noteOn, audioContext){
 
   if (this.filter) {
     this.source.connect(this.filter)
-    this.filter.connect(this.amp)
+    this.filter.connect(this.preamp)
   } else {
-    this.source.connect(this.amp)
+    this.source.connect(this.preamp)
   }
 
   this.amp.connect(this.output)
@@ -38,7 +38,23 @@ model.prototype.setupSource = function(buffer, region, noteOn){
 }
 
 model.prototype.setupAmp = function(region, noteOn){
+  var db = -20 * Math.log(Math.pow(127, 2) / Math.pow(noteOn.velocity, 2))
+    , noteGainAdj = (noteOn.pitch - region.amp_keycenter) * region.amp_keytrack
+
+  db = db + noteGainAdj
+
+  var velGainAdj = (region.amp_veltrack / 100.0) * noteOn.velocity / 127.0
+    , gain = Math.pow(10, (db / 20.0 )) * 1.0
+
+  gain = gain + (gain * velGainAdj)
+
+  this.preamp = this.audioContext.createGainNode()
+  this.preamp.gain.value = gain
+
   this.amp = this.audioContext.createGainNode()
+
+  this.preamp.connect(this.amp)
+
   this.ampeg = new EnvelopeGenerator({
     context: this.audioContext,
     delay: region.ampeg_delay,
