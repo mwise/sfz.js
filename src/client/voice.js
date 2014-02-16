@@ -4,7 +4,6 @@ var pitchToFreq = function(pitch){
 }
 
 var model = function(buffer, region, noteOn, audioContext){
-  //console.log("new voice", buffer, noteOn.pitch, region)
   this.gainNode = audioContext.createGainNode()
   this.gainNode.gain.value = .5
   this.sourceNode = audioContext.createBufferSource()
@@ -12,7 +11,7 @@ var model = function(buffer, region, noteOn, audioContext){
 
   var playbackRate = pitchToFreq(noteOn.pitch) / pitchToFreq(region.pitch_keycenter)
   this.sourceNode.playbackRate.value = playbackRate
-  console.log(noteOn.pitch, region.pitch_keycenter, playbackRate)
+  console.log(playbackRate)
 
   this.sourceNode.connect(this.gainNode)
 }

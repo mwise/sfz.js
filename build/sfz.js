@@ -1431,7 +1431,6 @@ var pitchToFreq = function(pitch){
 }
 
 var model = function(buffer, region, noteOn, audioContext){
-  //console.log("new voice", buffer, noteOn.pitch, region)
   this.gainNode = audioContext.createGainNode()
   this.gainNode.gain.value = .5
   this.sourceNode = audioContext.createBufferSource()
@@ -1439,7 +1438,7 @@ var model = function(buffer, region, noteOn, audioContext){
 
   var playbackRate = pitchToFreq(noteOn.pitch) / pitchToFreq(region.pitch_keycenter)
   this.sourceNode.playbackRate.value = playbackRate
-  console.log(noteOn.pitch, region.pitch_keycenter, playbackRate)
+  console.log(playbackRate)
 
   this.sourceNode.connect(this.gainNode)
 }
@@ -1495,6 +1494,7 @@ player.prototype.play = function(region, noteOn){
   var buffer = this.buffers[region.sample]
 
   if (noteOn.velocity != 0) {
+    console.log(noteOn.pitch, region.pitch_keycenter, region.sample)
     var voice = new Voice(buffer, region, noteOn, this.context)
     if (region.trigger == "attack") {
       this.voicesToRelease[noteOn.pitch] = voice
@@ -1574,7 +1574,6 @@ model.prototype.noteOn = function(channel, pitch, velocity){
     velocity: velocity
   }
 
-  //console.log("should play", this.regionsToPlay(noteOn, rand).length, "notes")
   _(this.regionsToPlay(noteOn, rand)).each(function(region){
     this.play(region, noteOn)
   }.bind(this))
@@ -2858,27 +2857,24 @@ module.exports = (function() {
               elements = elements !== null ? elements : [];
               var groups = [];
               var regions = [];
+              var lastNode = null
               for (var i = 0; i < elements.length; i++) {
                 if (elements[i] == '<group>') {
-                  groups.push({})
+                  lastNode = group = {}
+                  groups.push(lastNode)
                 } else if (elements[i] == "<region>") {
-                  var region = {}
+                  lastNode = {}
                   if (groups.length) {
-                    extend(region, groups[groups.length - 1])
+                    extend(lastNode, groups[groups.length - 1])
                   }
-                  regions.push(region)
+                  regions.push(lastNode)
                 } else {
                   var param = elements[i]
                     , name = param[0]
                     , value = param[1]
 
-                  //console.log(param)
-                  if (groups.length) {
-                    extend(groups[groups.length - 1], elements[i])
-                  }
-                  if (regions.length) {
-                    //console.log("extending", regions[regions.length - 1])
-                    extend(regions[regions.length - 1], elements[i])
+                  if (lastNode) {
+                    extend(lastNode, elements[i])
                   }
                 }
               }

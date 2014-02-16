@@ -1,7 +1,7 @@
 var midiSelect = new MIDISelect()
 var ac = new webkitAudioContext()
 
-sfz.load(ac, "/example/piano.mp3.sfz", function(instrument){
+sfz.load(ac, "/example/piano.small.mp3.sfz", function(instrument){
   midiSelect.on("noteOn", function(e){
     instrument.noteOn(e.detail.channel, e.detail.pitch, e.detail.velocity)
   })

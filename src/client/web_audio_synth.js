@@ -29,6 +29,7 @@ player.prototype.play = function(region, noteOn){
   var buffer = this.buffers[region.sample]
 
   if (noteOn.velocity != 0) {
+    console.log(noteOn.pitch, region.pitch_keycenter, region.sample)
     var voice = new Voice(buffer, region, noteOn, this.context)
     if (region.trigger == "attack") {
       this.voicesToRelease[noteOn.pitch] = voice

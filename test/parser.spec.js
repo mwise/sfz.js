@@ -167,7 +167,7 @@ describe("parsing", function(){
     }
 
     var testMidiNoteOpcode = function(name){
-      //testOpcode(name, "2", name, 2)
+      testOpcode(name, "2", name, 2)
       testOpcode(name, "c-1", name, 0)
       testOpcode(name, "c3", name, 48)
       testOpcode(name, "c#3", name, 49)

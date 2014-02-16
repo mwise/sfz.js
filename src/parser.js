@@ -52,27 +52,24 @@ module.exports = (function() {
               elements = elements !== null ? elements : [];
               var groups = [];
               var regions = [];
+              var lastNode = null
               for (var i = 0; i < elements.length; i++) {
                 if (elements[i] == '<group>') {
-                  groups.push({})
+                  lastNode = group = {}
+                  groups.push(lastNode)
                 } else if (elements[i] == "<region>") {
-                  var region = {}
+                  lastNode = {}
                   if (groups.length) {
-                    extend(region, groups[groups.length - 1])
+                    extend(lastNode, groups[groups.length - 1])
                   }
-                  regions.push(region)
+                  regions.push(lastNode)
                 } else {
                   var param = elements[i]
                     , name = param[0]
                     , value = param[1]
 
-                  //console.log(param)
-                  if (groups.length) {
-                    extend(groups[groups.length - 1], elements[i])
-                  }
-                  if (regions.length) {
-                    //console.log("extending", regions[regions.length - 1])
-                    extend(regions[regions.length - 1], elements[i])
+                  if (lastNode) {
+                    extend(lastNode, elements[i])
                   }
                 }
               }

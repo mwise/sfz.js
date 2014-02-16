@@ -61,7 +61,6 @@ model.prototype.noteOn = function(channel, pitch, velocity){
     velocity: velocity
   }
 
-  //console.log("should play", this.regionsToPlay(noteOn, rand).length, "notes")
   _(this.regionsToPlay(noteOn, rand)).each(function(region){
     this.play(region, noteOn)
   }.bind(this))
