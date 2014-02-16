@@ -14,7 +14,7 @@ sfz.load = function(audioContext, url, callback){
 
 module.exports = sfz
 
-},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":7,"./src/sfz":13}],2:[function(_dereq_,module,exports){
+},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":8,"./src/sfz":14}],2:[function(_dereq_,module,exports){
 //     Underscore.js 1.6.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -1461,7 +1461,6 @@ EnvelopeGenerator.prototype.trigger = function() {
 
 EnvelopeGenerator.prototype.triggerRelease = function(){
   var now = this.context.currentTime
-  console.log(this.param.value, this.release)
   this.param.setValueAtTime(this.param.value, now)
   this.param.linearRampToValueAtTime(0, now + this.release)
 }
@@ -1473,16 +1472,105 @@ EnvelopeGenerator.prototype.connect = function(param) {
 module.exports = EnvelopeGenerator
 
 },{"underscore":2}],6:[function(_dereq_,module,exports){
+var _ = _dereq_("underscore")
+
+var FILTER_TYPES = [
+  "lowpass",
+  "highpass",
+  "bandpass",
+  "lowshelf",
+  "highshelf",
+  "peaking",
+  "notch",
+  "allpass"
+]
+
+//TODO - update this for 1-pole filters when the web audio API
+ //makes the filter coefficients available
+var filter_map = {
+  "lpf_1p": FILTER_TYPES.indexOf("lowpass"),
+  "hpf_1p": FILTER_TYPES.indexOf("highpass"),
+  "lpf_2p": FILTER_TYPES.indexOf("lowpass"),
+  "hpf_2p": FILTER_TYPES.indexOf("highpass"),
+  "bpf_2p": FILTER_TYPES.indexOf("bandpass"),
+  "brf_2p": FILTER_TYPES.indexOf("notch")
+}
+
+var defaults = {
+  type: "lpf_2p",
+  cutoff: null,
+  cutoff_chanaft: 0,
+  cutoff_polyaft: 0,
+  resonance: 0,
+  keytrack: 0,
+  keycenter: 60,
+  veltrack: 0,
+  random: 0
+}
+
+var Filter = function(opts){
+  this.numberOfInputs = 1
+  this.numberOfOutputs = 1
+  this.channelCount = 2
+  this.channelCountMode = "max"
+  this.channelInterpretation = "speakers"
+
+  opts.type = filter_map[opts.type]
+  this.context = opts.context
+  _.extend(this, opts)
+  _.defaults(this, defaults)
+
+  this.frequency.value = this.cutoff
+  this.Q.value = this.resonance
+}
+
+var FilterFactory = function(opts){
+  var filter = opts.context.createBiquadFilter()
+  Filter.call(filter, opts)
+
+  return filter
+}
+
+module.exports = FilterFactory
+
+},{"underscore":2}],7:[function(_dereq_,module,exports){
 var EnvelopeGenerator = _dereq_("./envelope_generator")
+  , Filter = _dereq_("./filter")
 
 var pitchToFreq = function(pitch){
   return Math.pow(2, (pitch-69)/12.0) * 440
 }
 
 var model = function(buffer, region, noteOn, audioContext){
-  this.amp = audioContext.createGainNode()
+  this.audioContext = audioContext
+
+  this.output = audioContext.createGainNode()
+
+  this.setupSource(buffer, region, noteOn)
+  this.setupAmp(region)
+  this.setupFilter(region)
+
+  if (this.filter) {
+    this.source.connect(this.filter)
+    this.filter.connect(this.amp)
+  } else {
+    this.source.connect(this.amp)
+  }
+
+  this.amp.connect(this.output)
+}
+
+model.prototype.setupSource = function(buffer, region, noteOn){
+  this.source = this.audioContext.createBufferSource()
+  this.source.buffer = buffer
+  var playbackRate = pitchToFreq(noteOn.pitch) / pitchToFreq(region.pitch_keycenter)
+  this.source.playbackRate.value = playbackRate
+}
+
+model.prototype.setupAmp = function(region){
+  this.amp = this.audioContext.createGainNode()
   this.ampeg = new EnvelopeGenerator({
-    context: audioContext,
+    context: this.audioContext,
     delay: region.ampeg_delay,
     start: region.ampeg_start,
     attack: region.ampeg_attack,
@@ -1492,21 +1580,29 @@ var model = function(buffer, region, noteOn, audioContext){
     release: region.ampeg_release,
     depth: 100
   })
-  console.log(this.ampeg)
   this.ampeg.connect(this.amp.gain)
+}
 
-  this.sourceNode = audioContext.createBufferSource()
-  this.sourceNode.buffer = buffer
+model.prototype.setupFilter = function(region){
+  if (!region.cutoff) return;
 
-  var playbackRate = pitchToFreq(noteOn.pitch) / pitchToFreq(region.pitch_keycenter)
-  this.sourceNode.playbackRate.value = playbackRate
-
-  this.sourceNode.connect(this.amp)
+  this.filter = new Filter({
+    context: this.audioContext,
+    type: region.fil_type,
+    cutoff: region.cutoff,
+    cutoff_chanaft: region.cutoff_chanaft,
+    cutoff_polyaft: region.cutoff_polyaft,
+    resonance: region.resonance,
+    keytrack: region.fil_keytrack,
+    keycenter: region.fil_keycenter,
+    veltrack: region.fil_veltrack,
+    random: region.fil_random
+  })
 }
 
 model.prototype.start = function(){
   this.ampeg.trigger()
-  this.sourceNode.start(0)
+  this.source.start(0)
 }
 
 model.prototype.stop = function(){
@@ -1514,7 +1610,7 @@ model.prototype.stop = function(){
 }
 
 model.prototype.connect = function(destination, output){
-  this.amp.connect(destination, output)
+  this.output.connect(destination, output)
 }
 
 model.prototype.disconnect = function(output){
@@ -1523,7 +1619,7 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./envelope_generator":5}],7:[function(_dereq_,module,exports){
+},{"./envelope_generator":5,"./filter":6}],8:[function(_dereq_,module,exports){
 var BufferLoader = _dereq_("./buffer_loader")
   , Voice = _dereq_("./voice")
   , _ = _dereq_("underscore")
@@ -1572,7 +1668,7 @@ player.prototype.play = function(region, noteOn){
 
 module.exports = player
 
-},{"./buffer_loader":4,"./voice":6,"underscore":2}],8:[function(_dereq_,module,exports){
+},{"./buffer_loader":4,"./voice":7,"underscore":2}],9:[function(_dereq_,module,exports){
 var  Region = _dereq_("./region")
   , NullSynth = _dereq_("./null_synth")
   , _ = _dereq_("underscore")
@@ -1663,13 +1759,13 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./null_synth":9,"./region":12,"underscore":2}],9:[function(_dereq_,module,exports){
+},{"./null_synth":10,"./region":13,"underscore":2}],10:[function(_dereq_,module,exports){
 model = function(opts){
 }
 
 module.exports = model
 
-},{}],10:[function(_dereq_,module,exports){
+},{}],11:[function(_dereq_,module,exports){
 var  _ = _dereq_("underscore")
 
 var MAX_INT = 4294967296
@@ -2859,7 +2955,7 @@ Parameter.defaultValues = defaultValues
 
 module.exports = Parameter
 
-},{"underscore":2}],11:[function(_dereq_,module,exports){
+},{"underscore":2}],12:[function(_dereq_,module,exports){
 module.exports = (function() {
   /*
    * Generated by PEG.js 0.8.0.
@@ -7478,7 +7574,7 @@ module.exports = (function() {
   };
 })();
 
-},{}],12:[function(_dereq_,module,exports){
+},{}],13:[function(_dereq_,module,exports){
 var  Parameter = _dereq_("./parameter")
   , _ = _dereq_("underscore")
 
@@ -7504,7 +7600,7 @@ Region = function(opts){
 
 module.exports = Region
 
-},{"./parameter":10,"underscore":2}],13:[function(_dereq_,module,exports){
+},{"./parameter":11,"underscore":2}],14:[function(_dereq_,module,exports){
 var sfz = {}
   , Parser = _dereq_("./parser")
 
@@ -7520,6 +7616,6 @@ sfz.parse = function(str, driver, audioContext){
 
 module.exports = sfz
 
-},{"./instrument":8,"./parser":11}]},{},[1])
+},{"./instrument":9,"./parser":12}]},{},[1])
 (1)
 });
