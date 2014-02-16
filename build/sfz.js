@@ -1579,14 +1579,14 @@ model.prototype.setupSource = function(buffer, region, noteOn){
 
 model.prototype.setupAmp = function(region, noteOn){
   var db = -20 * Math.log(Math.pow(127, 2) / Math.pow(noteOn.velocity, 2))
-  var noteGainAdj = (noteOn.pitch - region.amp_keycenter) * region.amp_keytrack
+    , noteGainAdj = (noteOn.pitch - region.amp_keycenter) * region.amp_keytrack
+
   db = db + noteGainAdj
 
   var velGainAdj = (region.amp_veltrack / 100.0) * noteOn.velocity / 127.0
-  var gain = Math.pow(10, (db / 20.0 )) * 1.0
-  gain = gain + (gain * velGainAdj)
+    , gain = Math.pow(10, (db / 20.0 )) * 1.0
 
-  console.log(db, gain)
+  gain = gain + (gain * velGainAdj)
 
   this.preamp = this.audioContext.createGainNode()
   this.preamp.gain.value = gain
