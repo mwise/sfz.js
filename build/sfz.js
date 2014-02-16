@@ -1563,7 +1563,9 @@ var model = function(buffer, region, noteOn, audioContext){
 model.prototype.setupSource = function(buffer, region, noteOn){
   this.source = this.audioContext.createBufferSource()
   this.source.buffer = buffer
-  var playbackRate = pitchToFreq(noteOn.pitch) / pitchToFreq(region.pitch_keycenter)
+  var noteFreq = pitchToFreq(noteOn.pitch) * Math.pow((Math.pow(2, 1/1200)), region.tune)
+    , playbackRate = noteFreq / pitchToFreq(region.pitch_keycenter)
+
   this.source.playbackRate.value = playbackRate
 }
 
