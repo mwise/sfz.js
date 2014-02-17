@@ -1,9 +1,6 @@
 var EnvelopeGenerator = require("./envelope_generator")
   , Filter = require("./filter")
-
-var pitchToFreq = function(pitch){
-  return Math.pow(2, (pitch-69)/12.0) * 440
-}
+  , BufferSource = require("./buffer_source")
 
 var model = function(buffer, region, noteOn, audioContext){
   this.audioContext = audioContext
@@ -25,16 +22,17 @@ var model = function(buffer, region, noteOn, audioContext){
 }
 
 model.prototype.setupSource = function(buffer, region, noteOn){
-  this.source = this.audioContext.createBufferSource()
-  this.source.buffer = buffer
-
-  var cents = ((noteOn.pitch - region.pitch_keycenter) * region.pitch_keytrack) + region.tune
-  cents += (region.pitch_veltrack * noteOn.velocity / 127)
-
-  var noteFreq = pitchToFreq(noteOn.pitch + region.transpose) * Math.pow((Math.pow(2, 1/1200)), cents)
-    , playbackRate = noteFreq / pitchToFreq(region.pitch_keycenter)
-
-  this.source.playbackRate.value = playbackRate
+  this.source = new BufferSource({
+    context: this.audioContext,
+    buffer: buffer,
+    pitch: noteOn.pitch,
+    velocity: noteOn.velocity,
+    keycenter: region.pitch_keycenter,
+    keytrack: region.pitch_keytrack,
+    transpose: region.transpose,
+    tune: region.tune,
+    veltrack: region.pitch_veltrack
+  })
 }
 
 model.prototype.setupAmp = function(region, noteOn){
