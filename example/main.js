@@ -2,7 +2,7 @@ var midiSelect = new MIDISelect()
 var ac = new webkitAudioContext()
 
 var sfzUrl = "/example/piano.mp3.sfz"
-//var sfzUrl = "/example/Woodwinds - Oboe Solo.sfz"
+var sfzUrl = "/example/Woodwinds - Oboe Solo.sfz"
 //var sfzUrl = "/example/trumpet.sfz"
 sfz.load(ac, sfzUrl, function(instrument){
   midiSelect.on("noteOn", function(e){

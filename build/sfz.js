@@ -14,7 +14,7 @@ sfz.load = function(audioContext, url, callback){
 
 module.exports = sfz
 
-},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":9,"./src/sfz":15}],2:[function(_dereq_,module,exports){
+},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":10,"./src/sfz":16}],2:[function(_dereq_,module,exports){
 //     Underscore.js 1.6.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -1378,6 +1378,59 @@ module.exports = {
 }
 
 },{}],4:[function(_dereq_,module,exports){
+var _ = _dereq_("underscore")
+  , EnvelopeGenerator = _dereq_("./envelope_generator")
+
+var pitchToFreq = function(pitch){
+  return Math.pow(2, (pitch-69)/12.0) * 440
+}
+
+var Amplifier = function(opts){
+  this.input = opts.context.createGainNode()
+  this.output = opts.context.createGainNode()
+  this.input.connect(this.output)
+
+  var db = -20 * Math.log(Math.pow(127, 2) / Math.pow(opts.velocity, 2))
+    , noteGainAdj = (opts.pitch - opts.keycenter) * opts.keytrack
+
+  db = db + noteGainAdj
+
+  var velGainAdj = (opts.veltrack / 100.0) * opts.velocity / 127.0
+    , gain = Math.pow(10, (db / 20.0 )) * 1.0
+
+  gain = gain + (gain * velGainAdj)
+
+  this.input.gain.value = gain
+
+  this.ampeg = new EnvelopeGenerator({
+    context: opts.context,
+    delay: opts.eg_delay,
+    start: opts.eg_start,
+    attack: opts.eg_attack,
+    hold: opts.eg_hold,
+    decay: opts.eg_decay,
+    sustain: opts.eg_sustain,
+    release: opts.eg_release,
+    depth: 100
+  }, { pitch: opts.pitch, velocity: opts.velocity })
+  this.ampeg.connect(this.output.gain)
+}
+
+Amplifier.prototype.connect = function(destination, output){
+  this.output.connect(destination, output)
+}
+
+Amplifier.prototype.trigger = function(){
+  this.ampeg.trigger()
+}
+
+Amplifier.prototype.triggerRelease =  function(){
+  this.ampeg.triggerRelease()
+}
+
+module.exports = Amplifier
+
+},{"./envelope_generator":7,"underscore":2}],5:[function(_dereq_,module,exports){
 function BufferLoader(urlList, callback, audioContext){
   this.audioContext = audioContext
   this.urlList = urlList
@@ -1424,7 +1477,7 @@ BufferLoader.prototype.load = function(){
 
 module.exports = BufferLoader
 
-},{}],5:[function(_dereq_,module,exports){
+},{}],6:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
 
 var pitchToFreq = function(pitch){
@@ -1452,7 +1505,7 @@ var BufferSourceFactory = function(opts){
 
 module.exports = BufferSourceFactory
 
-},{"underscore":2}],6:[function(_dereq_,module,exports){
+},{"underscore":2}],7:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
 
 var defaults = {
@@ -1499,7 +1552,7 @@ EnvelopeGenerator.prototype.connect = function(param) {
 
 module.exports = EnvelopeGenerator
 
-},{"underscore":2}],7:[function(_dereq_,module,exports){
+},{"underscore":2}],8:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
 
 var FILTER_TYPES = [
@@ -1565,10 +1618,10 @@ var FilterFactory = function(opts, noteOn){
 
 module.exports = FilterFactory
 
-},{"underscore":2}],8:[function(_dereq_,module,exports){
-var EnvelopeGenerator = _dereq_("./envelope_generator")
+},{"underscore":2}],9:[function(_dereq_,module,exports){
+var BufferSource = _dereq_("./buffer_source")
   , Filter = _dereq_("./filter")
-  , BufferSource = _dereq_("./buffer_source")
+  , Amplifier = _dereq_("./amplifier")
 
 var model = function(buffer, region, noteOn, audioContext){
   this.audioContext = audioContext
@@ -1576,14 +1629,14 @@ var model = function(buffer, region, noteOn, audioContext){
   this.output = audioContext.createGainNode()
 
   this.setupSource(buffer, region, noteOn)
-  this.setupAmp(region, noteOn)
   this.setupFilter(region, noteOn)
+  this.setupAmp(region, noteOn)
 
   if (this.filter) {
     this.source.connect(this.filter)
-    this.filter.connect(this.preamp)
+    this.filter.connect(this.amp.input)
   } else {
-    this.source.connect(this.preamp)
+    this.source.connect(this.amp.input)
   }
 
   this.amp.connect(this.output)
@@ -1604,35 +1657,21 @@ model.prototype.setupSource = function(buffer, region, noteOn){
 }
 
 model.prototype.setupAmp = function(region, noteOn){
-  var db = -20 * Math.log(Math.pow(127, 2) / Math.pow(noteOn.velocity, 2))
-    , noteGainAdj = (noteOn.pitch - region.amp_keycenter) * region.amp_keytrack
-
-  db = db + noteGainAdj
-
-  var velGainAdj = (region.amp_veltrack / 100.0) * noteOn.velocity / 127.0
-    , gain = Math.pow(10, (db / 20.0 )) * 1.0
-
-  gain = gain + (gain * velGainAdj)
-
-  this.preamp = this.audioContext.createGainNode()
-  this.preamp.gain.value = gain
-
-  this.amp = this.audioContext.createGainNode()
-
-  this.preamp.connect(this.amp)
-
-  this.ampeg = new EnvelopeGenerator({
+  this.amp = new Amplifier({
     context: this.audioContext,
-    delay: region.ampeg_delay,
-    start: region.ampeg_start,
-    attack: region.ampeg_attack,
-    hold: region.ampeg_hold,
-    decay: region.ampeg_decay,
-    sustain: region.ampeg_sustain,
-    release: region.ampeg_release,
-    depth: 100
-  }, noteOn)
-  this.ampeg.connect(this.amp.gain)
+    pitch: noteOn.pitch,
+    velocity: noteOn.velocity,
+    keycenter: region.amp_keycenter,
+    keytrack: region.amp_keytrack,
+    veltrack: region.amp_veltrack,
+    eg_delay: region.ampeg_delay,
+    eg_start: region.ampeg_start,
+    eg_attack: region.ampeg_attack,
+    eg_hold: region.ampeg_hold,
+    eg_decay: region.ampeg_decay,
+    eg_sustain: region.ampeg_sustain,
+    eg_release: region.ampeg_release
+  })
 }
 
 model.prototype.setupFilter = function(region, noteOn){
@@ -1653,12 +1692,12 @@ model.prototype.setupFilter = function(region, noteOn){
 }
 
 model.prototype.start = function(){
-  this.ampeg.trigger()
+  this.amp.trigger()
   this.source.start(0)
 }
 
 model.prototype.stop = function(){
-  this.ampeg.triggerRelease()
+  this.amp.triggerRelease()
 }
 
 model.prototype.connect = function(destination, output){
@@ -1671,7 +1710,7 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./buffer_source":5,"./envelope_generator":6,"./filter":7}],9:[function(_dereq_,module,exports){
+},{"./amplifier":4,"./buffer_source":6,"./filter":8}],10:[function(_dereq_,module,exports){
 var BufferLoader = _dereq_("./buffer_loader")
   , Voice = _dereq_("./voice")
   , _ = _dereq_("underscore")
@@ -1720,7 +1759,7 @@ player.prototype.play = function(region, noteOn){
 
 module.exports = player
 
-},{"./buffer_loader":4,"./voice":8,"underscore":2}],10:[function(_dereq_,module,exports){
+},{"./buffer_loader":5,"./voice":9,"underscore":2}],11:[function(_dereq_,module,exports){
 var  Region = _dereq_("./region")
   , NullSynth = _dereq_("./null_synth")
   , _ = _dereq_("underscore")
@@ -1811,13 +1850,13 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./null_synth":11,"./region":14,"underscore":2}],11:[function(_dereq_,module,exports){
+},{"./null_synth":12,"./region":15,"underscore":2}],12:[function(_dereq_,module,exports){
 model = function(opts){
 }
 
 module.exports = model
 
-},{}],12:[function(_dereq_,module,exports){
+},{}],13:[function(_dereq_,module,exports){
 var  _ = _dereq_("underscore")
 
 var MAX_INT = 4294967296
@@ -3007,7 +3046,7 @@ Parameter.defaultValues = defaultValues
 
 module.exports = Parameter
 
-},{"underscore":2}],13:[function(_dereq_,module,exports){
+},{"underscore":2}],14:[function(_dereq_,module,exports){
 module.exports = (function() {
   /*
    * Generated by PEG.js 0.8.0.
@@ -7626,7 +7665,7 @@ module.exports = (function() {
   };
 })();
 
-},{}],14:[function(_dereq_,module,exports){
+},{}],15:[function(_dereq_,module,exports){
 var  Parameter = _dereq_("./parameter")
   , _ = _dereq_("underscore")
 
@@ -7652,7 +7691,7 @@ Region = function(opts){
 
 module.exports = Region
 
-},{"./parameter":12,"underscore":2}],15:[function(_dereq_,module,exports){
+},{"./parameter":13,"underscore":2}],16:[function(_dereq_,module,exports){
 var sfz = {}
   , Parser = _dereq_("./parser")
 
@@ -7668,6 +7707,6 @@ sfz.parse = function(str, driver, audioContext){
 
 module.exports = sfz
 
-},{"./instrument":10,"./parser":13}]},{},[1])
+},{"./instrument":11,"./parser":14}]},{},[1])
 (1)
 });

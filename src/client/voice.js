@@ -1,6 +1,6 @@
-var EnvelopeGenerator = require("./envelope_generator")
+var BufferSource = require("./buffer_source")
   , Filter = require("./filter")
-  , BufferSource = require("./buffer_source")
+  , Amplifier = require("./amplifier")
 
 var model = function(buffer, region, noteOn, audioContext){
   this.audioContext = audioContext
@@ -8,14 +8,14 @@ var model = function(buffer, region, noteOn, audioContext){
   this.output = audioContext.createGainNode()
 
   this.setupSource(buffer, region, noteOn)
-  this.setupAmp(region, noteOn)
   this.setupFilter(region, noteOn)
+  this.setupAmp(region, noteOn)
 
   if (this.filter) {
     this.source.connect(this.filter)
-    this.filter.connect(this.preamp)
+    this.filter.connect(this.amp.input)
   } else {
-    this.source.connect(this.preamp)
+    this.source.connect(this.amp.input)
   }
 
   this.amp.connect(this.output)
@@ -36,35 +36,21 @@ model.prototype.setupSource = function(buffer, region, noteOn){
 }
 
 model.prototype.setupAmp = function(region, noteOn){
-  var db = -20 * Math.log(Math.pow(127, 2) / Math.pow(noteOn.velocity, 2))
-    , noteGainAdj = (noteOn.pitch - region.amp_keycenter) * region.amp_keytrack
-
-  db = db + noteGainAdj
-
-  var velGainAdj = (region.amp_veltrack / 100.0) * noteOn.velocity / 127.0
-    , gain = Math.pow(10, (db / 20.0 )) * 1.0
-
-  gain = gain + (gain * velGainAdj)
-
-  this.preamp = this.audioContext.createGainNode()
-  this.preamp.gain.value = gain
-
-  this.amp = this.audioContext.createGainNode()
-
-  this.preamp.connect(this.amp)
-
-  this.ampeg = new EnvelopeGenerator({
+  this.amp = new Amplifier({
     context: this.audioContext,
-    delay: region.ampeg_delay,
-    start: region.ampeg_start,
-    attack: region.ampeg_attack,
-    hold: region.ampeg_hold,
-    decay: region.ampeg_decay,
-    sustain: region.ampeg_sustain,
-    release: region.ampeg_release,
-    depth: 100
-  }, noteOn)
-  this.ampeg.connect(this.amp.gain)
+    pitch: noteOn.pitch,
+    velocity: noteOn.velocity,
+    keycenter: region.amp_keycenter,
+    keytrack: region.amp_keytrack,
+    veltrack: region.amp_veltrack,
+    eg_delay: region.ampeg_delay,
+    eg_start: region.ampeg_start,
+    eg_attack: region.ampeg_attack,
+    eg_hold: region.ampeg_hold,
+    eg_decay: region.ampeg_decay,
+    eg_sustain: region.ampeg_sustain,
+    eg_release: region.ampeg_release
+  })
 }
 
 model.prototype.setupFilter = function(region, noteOn){
@@ -85,12 +71,12 @@ model.prototype.setupFilter = function(region, noteOn){
 }
 
 model.prototype.start = function(){
-  this.ampeg.trigger()
+  this.amp.trigger()
   this.source.start(0)
 }
 
 model.prototype.stop = function(){
-  this.ampeg.triggerRelease()
+  this.amp.triggerRelease()
 }
 
 model.prototype.connect = function(destination, output){
