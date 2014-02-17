@@ -1381,8 +1381,8 @@ module.exports = {
 var _ = _dereq_("underscore")
   , EnvelopeGenerator = _dereq_("./envelope_generator")
   , LFO = _dereq_("./lfo")
-  , AudioMath = _dereq_("./audio_math")
   , Signal = _dereq_("./signal")
+  , AudioMath = _dereq_("./audio_math")
 
 var pitchToFreq = function(pitch){
   return Math.pow(2, (pitch-69)/12.0) * 440
@@ -1394,13 +1394,15 @@ var Amplifier = function(opts){
   this.output = opts.context.createGainNode()
   this.input.connect(this.output)
 
+  var depth = AudioMath.dbToGain(opts.lfo_depth)
+
   this.lfo = new LFO({
     context: opts.context,
     delay: opts.lfo_delay,
     fade: opts.lfo_fade,
     freq: opts.lfo_freq,
     hold: opts.lfo_hold,
-    depth: opts.lfo_depth,
+    depth: depth,
     depthchanaft: opts.lfo_depthchanaft,
     depthpolyaft: opts.lfo_depthpolyaft,
     freqchanaft: opts.lfo_freqchanaft,
@@ -1459,6 +1461,10 @@ module.exports = Amplifier
 module.exports = {
   dbToGain: function(db){
     return Math.pow(10, (db / 20.0 )) * 1.0
+  },
+
+  adjustFreqByCents: function(freq, cents){
+    return freq * Math.pow((Math.pow(2, 1/1200)), cents)
   }
 }
 
@@ -1586,6 +1592,9 @@ module.exports = EnvelopeGenerator
 
 },{"underscore":2}],9:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
+  , LFO = _dereq_("./lfo")
+  , Signal = _dereq_("./signal")
+  , AudioMath = _dereq_("./audio_math")
 
 var FILTER_TYPES = [
   "lowpass",
@@ -1622,12 +1631,6 @@ var defaults = {
 }
 
 var Filter = function(opts, noteOn){
-  this.numberOfInputs = 1
-  this.numberOfOutputs = 1
-  this.channelCount = 2
-  this.channelCountMode = "max"
-  this.channelInterpretation = "speakers"
-
   opts.type = filter_map[opts.type]
   this.context = opts.context
   _.extend(this, opts)
@@ -1636,10 +1639,42 @@ var Filter = function(opts, noteOn){
   var noteCutoffAdj = (noteOn.pitch - this.keycenter) * this.keytrack
     , velCutoffAdj = this.veltrack * noteOn.velocity / 127
     , cutoffAdj = noteCutoffAdj + velCutoffAdj
+    , cutoffValue = this.cutoff + cutoffAdj
 
-  this.frequency.value = this.cutoff + cutoffAdj
+  var cutoffSignal = new Signal({
+    context: opts.context,
+    value: cutoffValue
+  })
+  cutoffSignal.connect(this.frequency)
+  cutoffSignal.start()
+
+  var freq2 = AudioMath.adjustFreqByCents(cutoffValue, this.lfo_depth)
+  var depth = freq2 - cutoffValue
+
+  console.log(depth)
+
+  this.lfo = new LFO({
+    context: this.context,
+    delay: this.lfo_delay,
+    fade: this.lfo_fade,
+    freq: this.lfo_freq,
+    hold: this.lfo_hold,
+    depth: depth,
+    depthchanaft: this.lfo_depthchanaft,
+    depthpolyaft: this.lfo_depthpolyaft,
+    freqchanaft: this.lfo_freqchanaft,
+    freqpolyaft: this.lfo_freqpolyaft
+  })
+  this.lfo.connect(this.frequency)
+
   this.Q.value = this.resonance
+
+  this.trigger = function(){
+    this.lfo.start()
+  }
+
 }
+
 
 var FilterFactory = function(opts, noteOn){
   var filter = opts.context.createBiquadFilter()
@@ -1650,7 +1685,7 @@ var FilterFactory = function(opts, noteOn){
 
 module.exports = FilterFactory
 
-},{"underscore":2}],10:[function(_dereq_,module,exports){
+},{"./audio_math":5,"./lfo":10,"./signal":11,"underscore":2}],10:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
   , AudioMath = _dereq_("./audio_math")
 
@@ -1670,8 +1705,6 @@ var LFO = function(opts){
   this.context = opts.context
   _.extend(this, opts)
   _.defaults(this, defaults)
-
-  this.depth = AudioMath.dbToGain(this.depth)
 
   this.oscillator = this.context.createOscillator()
   this.oscillator.frequency.value = this.freq
@@ -1701,23 +1734,23 @@ var Signal = function(opts){
   this.context = opts.context
   if (typeof opts.value == "undefined") opts.value == 1
 
-  var n = 4096
-  var real = new Float32Array(n)
-  var imag = new Float32Array(n)
+  var buffer = opts.context.createBuffer(1, 1024, opts.context.sampleRate)
 
-  for (var x = 1; x < n; x+=2) {
-    imag[x] = opts.value
+  var data = buffer.getChannelData(0)
+
+  for (var i=0; i < data.length; i++) {
+    data[i] = opts.value
   }
 
-  var wavetable = opts.context.createPeriodicWave(real, imag)
-  this.setPeriodicWave(wavetable)
+  this.buffer = buffer
+  this.loop = true
 }
 
 var SignalFactory = function(opts){
-  var osc = opts.context.createOscillator()
-  Signal.call(osc, opts)
+  var source = opts.context.createBufferSource()
+  Signal.call(source, opts)
 
-  return osc
+  return source
 }
 
 module.exports = SignalFactory
@@ -1805,12 +1838,21 @@ model.prototype.setupFilter = function(region, noteOn){
     keytrack: region.fil_keytrack,
     keycenter: region.fil_keycenter,
     veltrack: region.fil_veltrack,
-    random: region.fil_random
+    random: region.fil_random,
+    lfo_delay: region.fillfo_delay,
+    lfo_fade: region.fillfo_fade,
+    lfo_freq: region.fillfo_freq,
+    lfo_depth: region.fillfo_depth,
+    lfo_depthchanaft: region.fillfo_depthchanaft,
+    lfo_depthpolyaft: region.fillfo_depthpolyaft,
+    lfo_freqchanaft: region.fillfo_freqchanaft,
+    lfo_freqpolyaft: region.fillfo_freqpolyaft
   }, noteOn)
 }
 
 model.prototype.start = function(){
   this.amp.trigger()
+  this.filter.trigger()
   this.source.start(0)
 }
 

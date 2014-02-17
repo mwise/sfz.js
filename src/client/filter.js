@@ -1,4 +1,7 @@
 var _ = require("underscore")
+  , LFO = require("./lfo")
+  , Signal = require("./signal")
+  , AudioMath = require("./audio_math")
 
 var FILTER_TYPES = [
   "lowpass",
@@ -35,12 +38,6 @@ var defaults = {
 }
 
 var Filter = function(opts, noteOn){
-  this.numberOfInputs = 1
-  this.numberOfOutputs = 1
-  this.channelCount = 2
-  this.channelCountMode = "max"
-  this.channelInterpretation = "speakers"
-
   opts.type = filter_map[opts.type]
   this.context = opts.context
   _.extend(this, opts)
@@ -49,10 +46,40 @@ var Filter = function(opts, noteOn){
   var noteCutoffAdj = (noteOn.pitch - this.keycenter) * this.keytrack
     , velCutoffAdj = this.veltrack * noteOn.velocity / 127
     , cutoffAdj = noteCutoffAdj + velCutoffAdj
+    , cutoffValue = this.cutoff + cutoffAdj
 
-  this.frequency.value = this.cutoff + cutoffAdj
+  var cutoffSignal = new Signal({
+    context: opts.context,
+    value: cutoffValue
+  })
+  cutoffSignal.connect(this.frequency)
+  cutoffSignal.start()
+
+  var freq2 = AudioMath.adjustFreqByCents(cutoffValue, this.lfo_depth)
+    , depth = freq2 - cutoffValue
+
+  this.lfo = new LFO({
+    context: this.context,
+    delay: this.lfo_delay,
+    fade: this.lfo_fade,
+    freq: this.lfo_freq,
+    hold: this.lfo_hold,
+    depth: depth,
+    depthchanaft: this.lfo_depthchanaft,
+    depthpolyaft: this.lfo_depthpolyaft,
+    freqchanaft: this.lfo_freqchanaft,
+    freqpolyaft: this.lfo_freqpolyaft
+  })
+  this.lfo.connect(this.frequency)
+
   this.Q.value = this.resonance
+
+  this.trigger = function(){
+    this.lfo.start()
+  }
+
 }
+
 
 var FilterFactory = function(opts, noteOn){
   var filter = opts.context.createBiquadFilter()

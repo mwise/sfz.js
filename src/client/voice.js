@@ -80,12 +80,21 @@ model.prototype.setupFilter = function(region, noteOn){
     keytrack: region.fil_keytrack,
     keycenter: region.fil_keycenter,
     veltrack: region.fil_veltrack,
-    random: region.fil_random
+    random: region.fil_random,
+    lfo_delay: region.fillfo_delay,
+    lfo_fade: region.fillfo_fade,
+    lfo_freq: region.fillfo_freq,
+    lfo_depth: region.fillfo_depth,
+    lfo_depthchanaft: region.fillfo_depthchanaft,
+    lfo_depthpolyaft: region.fillfo_depthpolyaft,
+    lfo_freqchanaft: region.fillfo_freqchanaft,
+    lfo_freqpolyaft: region.fillfo_freqpolyaft
   }, noteOn)
 }
 
 model.prototype.start = function(){
   this.amp.trigger()
+  this.filter.trigger()
   this.source.start(0)
 }
 

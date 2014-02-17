@@ -1,8 +1,8 @@
 var _ = require("underscore")
   , EnvelopeGenerator = require("./envelope_generator")
   , LFO = require("./lfo")
-  , AudioMath = require("./audio_math")
   , Signal = require("./signal")
+  , AudioMath = require("./audio_math")
 
 var pitchToFreq = function(pitch){
   return Math.pow(2, (pitch-69)/12.0) * 440
@@ -14,13 +14,15 @@ var Amplifier = function(opts){
   this.output = opts.context.createGainNode()
   this.input.connect(this.output)
 
+  var depth = AudioMath.dbToGain(opts.lfo_depth)
+
   this.lfo = new LFO({
     context: opts.context,
     delay: opts.lfo_delay,
     fade: opts.lfo_fade,
     freq: opts.lfo_freq,
     hold: opts.lfo_hold,
-    depth: opts.lfo_depth,
+    depth: depth,
     depthchanaft: opts.lfo_depthchanaft,
     depthpolyaft: opts.lfo_depthpolyaft,
     freqchanaft: opts.lfo_freqchanaft,

@@ -18,8 +18,6 @@ var LFO = function(opts){
   _.extend(this, opts)
   _.defaults(this, defaults)
 
-  this.depth = AudioMath.dbToGain(this.depth)
-
   this.oscillator = this.context.createOscillator()
   this.oscillator.frequency.value = this.freq
   this.gainNode = this.context.createGainNode()

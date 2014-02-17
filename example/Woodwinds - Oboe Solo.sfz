@@ -6,7 +6,7 @@
 
 <group>
 ampeg_release=0.560
-fil_type=lpf_2p
+fil_type=bpf_2p
 cutoff=5000
 
 <region>
