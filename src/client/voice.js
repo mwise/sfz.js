@@ -49,7 +49,21 @@ model.prototype.setupAmp = function(region, noteOn){
     eg_hold: region.ampeg_hold,
     eg_decay: region.ampeg_decay,
     eg_sustain: region.ampeg_sustain,
-    eg_release: region.ampeg_release
+    eg_release: region.ampeg_release,
+    eg_vel2delay: region.ampeg_vel2delay,
+    eg_vel2attack: region.ampeg_vel2attack,
+    eg_vel2hold: region.ampeg_vel2hold,
+    eg_vel2decay: region.ampeg_vel2decay,
+    eg_vel2sustain: region.ampeg_vel2sustain,
+    eg_vel2release: region.ampeg_vel2release,
+    lfo_delay: region.amplfo_delay,
+    lfo_fade: region.amplfo_fade,
+    lfo_freq: region.amplfo_freq,
+    lfo_depth: region.amplfo_depth,
+    lfo_depthchanaft: region.amplfo_depthchanaft,
+    lfo_depthpolyaft: region.amplfo_depthpolyaft,
+    lfo_freqchanaft: region.amplfo_freqchanaft,
+    lfo_freqpolyaft: region.amplfo_freqpolyaft
   })
 }
 

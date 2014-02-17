@@ -14,7 +14,7 @@ sfz.load = function(audioContext, url, callback){
 
 module.exports = sfz
 
-},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":10,"./src/sfz":16}],2:[function(_dereq_,module,exports){
+},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":13,"./src/sfz":19}],2:[function(_dereq_,module,exports){
 //     Underscore.js 1.6.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -1380,15 +1380,32 @@ module.exports = {
 },{}],4:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
   , EnvelopeGenerator = _dereq_("./envelope_generator")
+  , LFO = _dereq_("./lfo")
+  , AudioMath = _dereq_("./audio_math")
+  , Signal = _dereq_("./signal")
 
 var pitchToFreq = function(pitch){
   return Math.pow(2, (pitch-69)/12.0) * 440
 }
 
 var Amplifier = function(opts){
+  this.context = opts.context
   this.input = opts.context.createGainNode()
   this.output = opts.context.createGainNode()
   this.input.connect(this.output)
+
+  this.lfo = new LFO({
+    context: opts.context,
+    delay: opts.lfo_delay,
+    fade: opts.lfo_fade,
+    freq: opts.lfo_freq,
+    hold: opts.lfo_hold,
+    depth: opts.lfo_depth,
+    depthchanaft: opts.lfo_depthchanaft,
+    depthpolyaft: opts.lfo_depthpolyaft,
+    freqchanaft: opts.lfo_freqchanaft,
+    freqpolyaft: opts.lfo_freqpolyaft
+  })
 
   var db = -20 * Math.log(Math.pow(127, 2) / Math.pow(opts.velocity, 2))
     , noteGainAdj = (opts.pitch - opts.keycenter) * opts.keytrack
@@ -1396,11 +1413,17 @@ var Amplifier = function(opts){
   db = db + noteGainAdj
 
   var velGainAdj = (opts.veltrack / 100.0) * opts.velocity / 127.0
-    , gain = Math.pow(10, (db / 20.0 )) * 1.0
+    , gain = AudioMath.dbToGain(db)
 
   gain = gain + (gain * velGainAdj)
 
-  this.input.gain.value = gain
+  var gainSignal = new Signal({
+    context: opts.context,
+    value: gain
+  })
+  gainSignal.connect(this.input.gain)
+  gainSignal.start()
+  this.lfo.connect(this.input.gain)
 
   this.ampeg = new EnvelopeGenerator({
     context: opts.context,
@@ -1413,6 +1436,7 @@ var Amplifier = function(opts){
     release: opts.eg_release,
     depth: 100
   }, { pitch: opts.pitch, velocity: opts.velocity })
+
   this.ampeg.connect(this.output.gain)
 }
 
@@ -1421,6 +1445,7 @@ Amplifier.prototype.connect = function(destination, output){
 }
 
 Amplifier.prototype.trigger = function(){
+  this.lfo.start()
   this.ampeg.trigger()
 }
 
@@ -1430,7 +1455,14 @@ Amplifier.prototype.triggerRelease =  function(){
 
 module.exports = Amplifier
 
-},{"./envelope_generator":7,"underscore":2}],5:[function(_dereq_,module,exports){
+},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":11,"underscore":2}],5:[function(_dereq_,module,exports){
+module.exports = {
+  dbToGain: function(db){
+    return Math.pow(10, (db / 20.0 )) * 1.0
+  }
+}
+
+},{}],6:[function(_dereq_,module,exports){
 function BufferLoader(urlList, callback, audioContext){
   this.audioContext = audioContext
   this.urlList = urlList
@@ -1477,7 +1509,7 @@ BufferLoader.prototype.load = function(){
 
 module.exports = BufferLoader
 
-},{}],6:[function(_dereq_,module,exports){
+},{}],7:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
 
 var pitchToFreq = function(pitch){
@@ -1505,7 +1537,7 @@ var BufferSourceFactory = function(opts){
 
 module.exports = BufferSourceFactory
 
-},{"underscore":2}],7:[function(_dereq_,module,exports){
+},{"underscore":2}],8:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
 
 var defaults = {
@@ -1552,7 +1584,7 @@ EnvelopeGenerator.prototype.connect = function(param) {
 
 module.exports = EnvelopeGenerator
 
-},{"underscore":2}],8:[function(_dereq_,module,exports){
+},{"underscore":2}],9:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
 
 var FILTER_TYPES = [
@@ -1618,7 +1650,79 @@ var FilterFactory = function(opts, noteOn){
 
 module.exports = FilterFactory
 
-},{"underscore":2}],9:[function(_dereq_,module,exports){
+},{"underscore":2}],10:[function(_dereq_,module,exports){
+var _ = _dereq_("underscore")
+  , AudioMath = _dereq_("./audio_math")
+
+var defaults = {
+  delay: 0,
+  fade: 0,
+  freq: 0,
+  hold: 0,
+  depth: 0,
+  depthchanaft: 0,
+  depthpolyaft: 0,
+  freqchanaft: 0,
+  freqpolyaft: 0
+}
+
+var LFO = function(opts){
+  this.context = opts.context
+  _.extend(this, opts)
+  _.defaults(this, defaults)
+
+  this.depth = AudioMath.dbToGain(this.depth)
+
+  this.oscillator = this.context.createOscillator()
+  this.oscillator.frequency.value = this.freq
+  this.gainNode = this.context.createGainNode()
+  this.oscillator.connect(this.gainNode)
+}
+
+LFO.prototype.start = function(){
+  var now = this.context.currentTime
+    , delayTime = now + this.delay
+    , fadeTime = delayTime + this.fade
+
+  this.gainNode.gain.setValueAtTime(0, now)
+  this.gainNode.gain.setValueAtTime(0, delayTime)
+  this.gainNode.gain.linearRampToValueAtTime(this.depth, fadeTime)
+  this.oscillator.start(delayTime)
+}
+
+LFO.prototype.connect = function(param) {
+  this.gainNode.connect(param)
+}
+
+module.exports = LFO
+
+},{"./audio_math":5,"underscore":2}],11:[function(_dereq_,module,exports){
+var Signal = function(opts){
+  this.context = opts.context
+  if (typeof opts.value == "undefined") opts.value == 1
+
+  var n = 4096
+  var real = new Float32Array(n)
+  var imag = new Float32Array(n)
+
+  for (var x = 1; x < n; x+=2) {
+    imag[x] = opts.value
+  }
+
+  var wavetable = opts.context.createPeriodicWave(real, imag)
+  this.setPeriodicWave(wavetable)
+}
+
+var SignalFactory = function(opts){
+  var osc = opts.context.createOscillator()
+  Signal.call(osc, opts)
+
+  return osc
+}
+
+module.exports = SignalFactory
+
+},{}],12:[function(_dereq_,module,exports){
 var BufferSource = _dereq_("./buffer_source")
   , Filter = _dereq_("./filter")
   , Amplifier = _dereq_("./amplifier")
@@ -1670,7 +1774,21 @@ model.prototype.setupAmp = function(region, noteOn){
     eg_hold: region.ampeg_hold,
     eg_decay: region.ampeg_decay,
     eg_sustain: region.ampeg_sustain,
-    eg_release: region.ampeg_release
+    eg_release: region.ampeg_release,
+    eg_vel2delay: region.ampeg_vel2delay,
+    eg_vel2attack: region.ampeg_vel2attack,
+    eg_vel2hold: region.ampeg_vel2hold,
+    eg_vel2decay: region.ampeg_vel2decay,
+    eg_vel2sustain: region.ampeg_vel2sustain,
+    eg_vel2release: region.ampeg_vel2release,
+    lfo_delay: region.amplfo_delay,
+    lfo_fade: region.amplfo_fade,
+    lfo_freq: region.amplfo_freq,
+    lfo_depth: region.amplfo_depth,
+    lfo_depthchanaft: region.amplfo_depthchanaft,
+    lfo_depthpolyaft: region.amplfo_depthpolyaft,
+    lfo_freqchanaft: region.amplfo_freqchanaft,
+    lfo_freqpolyaft: region.amplfo_freqpolyaft
   })
 }
 
@@ -1710,7 +1828,7 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./amplifier":4,"./buffer_source":6,"./filter":8}],10:[function(_dereq_,module,exports){
+},{"./amplifier":4,"./buffer_source":7,"./filter":9}],13:[function(_dereq_,module,exports){
 var BufferLoader = _dereq_("./buffer_loader")
   , Voice = _dereq_("./voice")
   , _ = _dereq_("underscore")
@@ -1759,7 +1877,7 @@ player.prototype.play = function(region, noteOn){
 
 module.exports = player
 
-},{"./buffer_loader":5,"./voice":9,"underscore":2}],11:[function(_dereq_,module,exports){
+},{"./buffer_loader":6,"./voice":12,"underscore":2}],14:[function(_dereq_,module,exports){
 var  Region = _dereq_("./region")
   , NullSynth = _dereq_("./null_synth")
   , _ = _dereq_("underscore")
@@ -1850,13 +1968,13 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./null_synth":12,"./region":15,"underscore":2}],12:[function(_dereq_,module,exports){
+},{"./null_synth":15,"./region":18,"underscore":2}],15:[function(_dereq_,module,exports){
 model = function(opts){
 }
 
 module.exports = model
 
-},{}],13:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 var  _ = _dereq_("underscore")
 
 var MAX_INT = 4294967296
@@ -3046,7 +3164,7 @@ Parameter.defaultValues = defaultValues
 
 module.exports = Parameter
 
-},{"underscore":2}],14:[function(_dereq_,module,exports){
+},{"underscore":2}],17:[function(_dereq_,module,exports){
 module.exports = (function() {
   /*
    * Generated by PEG.js 0.8.0.
@@ -7665,7 +7783,7 @@ module.exports = (function() {
   };
 })();
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],18:[function(_dereq_,module,exports){
 var  Parameter = _dereq_("./parameter")
   , _ = _dereq_("underscore")
 
@@ -7691,7 +7809,7 @@ Region = function(opts){
 
 module.exports = Region
 
-},{"./parameter":13,"underscore":2}],16:[function(_dereq_,module,exports){
+},{"./parameter":16,"underscore":2}],19:[function(_dereq_,module,exports){
 var sfz = {}
   , Parser = _dereq_("./parser")
 
@@ -7707,6 +7825,6 @@ sfz.parse = function(str, driver, audioContext){
 
 module.exports = sfz
 
-},{"./instrument":11,"./parser":14}]},{},[1])
+},{"./instrument":14,"./parser":17}]},{},[1])
 (1)
 });
