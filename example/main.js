@@ -5,6 +5,8 @@ var sfzUrl = "/example/piano.mp3.sfz"
 var sfzUrl = "/example/Woodwinds - Oboe Solo.sfz"
 var sfzUrl = "/example/trumpet.sfz"
 sfz.load(ac, sfzUrl, function(instrument){
+  window.instrument = instrument
+
   midiSelect.on("noteOn", function(e){
     instrument.noteOn(e.detail.channel, e.detail.pitch, e.detail.velocity)
   })
@@ -14,8 +16,6 @@ sfz.load(ac, sfzUrl, function(instrument){
   })
 
   midiSelect.on("pitchBend", function(e){
-    console.log(e.detail)
+    instrument.pitchBend(e.detail.channel, e.detail.bend)
   })
 })
-
-

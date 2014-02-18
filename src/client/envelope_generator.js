@@ -17,7 +17,9 @@ var EnvelopeGenerator = function(opts){
   _.defaults(this, defaults)
 }
 
-EnvelopeGenerator.prototype.trigger = function() {
+EnvelopeGenerator.prototype.onended = function(){}
+
+EnvelopeGenerator.prototype.trigger = function(){
   var now = this.context.currentTime
   var attackTime = now + this.attack
     , holdTime = attackTime + this.hold
@@ -36,10 +38,17 @@ EnvelopeGenerator.prototype.triggerRelease = function(){
   var now = this.context.currentTime
   this.param.setValueAtTime(this.param.value, now)
   this.param.linearRampToValueAtTime(0, now + this.release)
+  setTimeout(function(){
+    this.onended()
+  }.bind(this), this.release * 1000 + 5)
 }
 
 EnvelopeGenerator.prototype.connect = function(param) {
   this.param = param
+}
+
+EnvelopeGenerator.prototype.destroy = function(destroy) {
+  this.param = null
 }
 
 module.exports = EnvelopeGenerator

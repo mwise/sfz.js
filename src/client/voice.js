@@ -140,6 +140,11 @@ model.prototype.setupEqualizer = function(region, noteOn){
 }
 
 model.prototype.start = function(){
+  var self = this
+  this.amp.oneneded = function(){
+    self.source.stop()
+    self.destroy
+  }
   this.amp.trigger()
   this.filter.trigger()
   this.source.start(0)
@@ -154,7 +159,20 @@ model.prototype.connect = function(destination, output){
 }
 
 model.prototype.disconnect = function(output){
-  this.amp.disconnect(output)
+  this.equalizer.disconnect(output)
+}
+
+model.prototype.destroy = function(){
+  if (this.filter) this.filter.destroy()
+  this.amp.destroy()
+  this.panner.disconnect()
+  this.equalizer.destroy()
+
+  this.source = null
+  this.filter = null
+  this.amp = null
+  this.panner = null
+  this.equalizer = null
 }
 
 module.exports = model

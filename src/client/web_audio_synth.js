@@ -4,9 +4,11 @@ var BufferLoader = require("./buffer_loader")
 
 var player = function(instrument, audioContext){
   this.context = audioContext
+  window.context = this.context
   var sampleUrls = instrument.samples()
   this.loadBuffers(sampleUrls)
   this.voicesToRelease = {}
+  this.bend = 0
 }
 
 player.prototype.loadBuffers = function(urls){
@@ -23,8 +25,6 @@ player.prototype.onBuffersLoaded = function(buffers){
   _(this.samples).each(function(url, i){
     self.buffers[url] = buffers[i]
   })
-
-  console.log("instrument.ready")
 }
 
 player.prototype.play = function(region, noteOn){
@@ -38,10 +38,17 @@ player.prototype.play = function(region, noteOn){
     voice.connect(this.context.destination)
     voice.start()
   } else {
-
     var voice = this.voicesToRelease[noteOn.pitch]
-    if (voice) voice.stop()
+    if (voice) {
+      voice.stop()
+      delete this.voicesToRelease[noteOn.pitch]
+    }
   }
+}
+
+player.prototype.pitchBend = function(channel, bend){
+  console.log(bend)
+  this.bend = bend
 }
 
 module.exports = player

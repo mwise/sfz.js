@@ -39,12 +39,12 @@ var Amplifier = function(opts){
 
   gain = gain + (gain * velGainAdj)
 
-  var gainSignal = new Signal({
+  this.gainSignal = new Signal({
     context: opts.context,
     value: gain
   })
-  gainSignal.connect(this.input.gain)
-  gainSignal.start()
+  this.gainSignal.connect(this.input.gain)
+  this.gainSignal.start()
   this.lfo.connect(this.input.gain)
 
   this.eg = new EnvelopeGenerator({
@@ -59,6 +59,8 @@ var Amplifier = function(opts){
     depth: 100
   }, { pitch: opts.pitch, velocity: opts.velocity })
 
+  this.eg.onended = this.onended
+
   this.eg.connect(this.output.gain)
 }
 
@@ -66,13 +68,32 @@ Amplifier.prototype.connect = function(destination, output){
   this.output.connect(destination, output)
 }
 
+Amplifier.prototype.disconnect = function(output){
+  this.output.disconnect(output)
+}
+
 Amplifier.prototype.trigger = function(){
   this.lfo.start()
   this.eg.trigger()
 }
 
-Amplifier.prototype.triggerRelease =  function(){
+Amplifier.prototype.triggerRelease = function(){
   this.eg.triggerRelease()
 }
+
+Amplifier.prototype.destroy = function(){
+  this.lfo.destroy()
+  this.eg.destroy()
+  this.input.disconnect()
+  this.output.disconnect()
+  this.gainSignal.stop()
+  this.gainSignal = null
+  this.input = null
+  this.output = null
+  this.lfo = null
+  this.eg = null
+}
+
+Amplifier.prototype.onended = function(){}
 
 module.exports = Amplifier

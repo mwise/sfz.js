@@ -94,6 +94,11 @@ var Filter = function(opts, noteOn){
     this.eg.trigger()
   }
 
+  this.destroy = function(){
+    this.lfo.destroy()
+    this.eg.destroy()
+  }
+
 }
 
 

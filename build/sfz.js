@@ -1419,12 +1419,12 @@ var Amplifier = function(opts){
 
   gain = gain + (gain * velGainAdj)
 
-  var gainSignal = new Signal({
+  this.gainSignal = new Signal({
     context: opts.context,
     value: gain
   })
-  gainSignal.connect(this.input.gain)
-  gainSignal.start()
+  this.gainSignal.connect(this.input.gain)
+  this.gainSignal.start()
   this.lfo.connect(this.input.gain)
 
   this.eg = new EnvelopeGenerator({
@@ -1439,6 +1439,8 @@ var Amplifier = function(opts){
     depth: 100
   }, { pitch: opts.pitch, velocity: opts.velocity })
 
+  this.eg.onended = this.onended
+
   this.eg.connect(this.output.gain)
 }
 
@@ -1446,14 +1448,33 @@ Amplifier.prototype.connect = function(destination, output){
   this.output.connect(destination, output)
 }
 
+Amplifier.prototype.disconnect = function(output){
+  this.output.disconnect(output)
+}
+
 Amplifier.prototype.trigger = function(){
   this.lfo.start()
   this.eg.trigger()
 }
 
-Amplifier.prototype.triggerRelease =  function(){
+Amplifier.prototype.triggerRelease = function(){
   this.eg.triggerRelease()
 }
+
+Amplifier.prototype.destroy = function(){
+  this.lfo.destroy()
+  this.eg.destroy()
+  this.input.disconnect()
+  this.output.disconnect()
+  this.gainSignal.stop()
+  this.gainSignal = null
+  this.input = null
+  this.output = null
+  this.lfo = null
+  this.eg = null
+}
+
+Amplifier.prototype.onended = function(){}
 
 module.exports = Amplifier
 
@@ -1563,7 +1584,9 @@ var EnvelopeGenerator = function(opts){
   _.defaults(this, defaults)
 }
 
-EnvelopeGenerator.prototype.trigger = function() {
+EnvelopeGenerator.prototype.onended = function(){}
+
+EnvelopeGenerator.prototype.trigger = function(){
   var now = this.context.currentTime
   var attackTime = now + this.attack
     , holdTime = attackTime + this.hold
@@ -1582,10 +1605,17 @@ EnvelopeGenerator.prototype.triggerRelease = function(){
   var now = this.context.currentTime
   this.param.setValueAtTime(this.param.value, now)
   this.param.linearRampToValueAtTime(0, now + this.release)
+  setTimeout(function(){
+    this.onended()
+  }.bind(this), this.release * 1000 + 5)
 }
 
 EnvelopeGenerator.prototype.connect = function(param) {
   this.param = param
+}
+
+EnvelopeGenerator.prototype.destroy = function(destroy) {
+  this.param = null
 }
 
 module.exports = EnvelopeGenerator
@@ -1646,6 +1676,14 @@ var Equalizer = function(opts){
 
 Equalizer.prototype.connect = function(destination, output){
   this.output.connect(destination, output)
+}
+
+Equalizer.prototype.disconnect = function(output){
+  this.output.disconnect(output)
+}
+
+Equalizer.prototype.destroy = function(){
+  this.disconnect()
 }
 
 module.exports = Equalizer
@@ -1747,6 +1785,11 @@ var Filter = function(opts, noteOn){
     this.eg.trigger()
   }
 
+  this.destroy = function(){
+    this.lfo.destroy()
+    this.eg.destroy()
+  }
+
 }
 
 
@@ -1797,8 +1840,14 @@ LFO.prototype.start = function(){
   this.oscillator.start(delayTime)
 }
 
-LFO.prototype.connect = function(param) {
+LFO.prototype.connect = function(param){
   this.gainNode.connect(param)
+}
+
+LFO.prototype.destroy = function(){
+  this.oscillator.stop()
+  this.oscillator.disconnect()
+  this.gainNode.disconnect()
 }
 
 module.exports = LFO
@@ -2017,6 +2066,11 @@ model.prototype.setupEqualizer = function(region, noteOn){
 }
 
 model.prototype.start = function(){
+  var self = this
+  this.amp.oneneded = function(){
+    //self.source.stop()
+    //self.destroy
+  }
   this.amp.trigger()
   this.filter.trigger()
   this.source.start(0)
@@ -2031,7 +2085,20 @@ model.prototype.connect = function(destination, output){
 }
 
 model.prototype.disconnect = function(output){
-  this.amp.disconnect(output)
+  this.equalizer.disconnect(output)
+}
+
+model.prototype.destroy = function(){
+  if (this.filter) this.filter.destroy()
+  this.amp.destroy()
+  this.panner.disconnect()
+  this.equalizer.destroy()
+
+  this.source = null
+  this.filter = null
+  this.amp = null
+  this.panner = null
+  this.equalizer = null
 }
 
 module.exports = model
@@ -2043,9 +2110,11 @@ var BufferLoader = _dereq_("./buffer_loader")
 
 var player = function(instrument, audioContext){
   this.context = audioContext
+  window.context = this.context
   var sampleUrls = instrument.samples()
   this.loadBuffers(sampleUrls)
   this.voicesToRelease = {}
+  this.bend = 0
 }
 
 player.prototype.loadBuffers = function(urls){
@@ -2062,8 +2131,6 @@ player.prototype.onBuffersLoaded = function(buffers){
   _(this.samples).each(function(url, i){
     self.buffers[url] = buffers[i]
   })
-
-  console.log("instrument.ready")
 }
 
 player.prototype.play = function(region, noteOn){
@@ -2077,10 +2144,17 @@ player.prototype.play = function(region, noteOn){
     voice.connect(this.context.destination)
     voice.start()
   } else {
-
     var voice = this.voicesToRelease[noteOn.pitch]
-    if (voice) voice.stop()
+    if (voice) {
+      voice.stop()
+      delete this.voicesToRelease[noteOn.pitch]
+    }
   }
+}
+
+player.prototype.pitchBend = function(channel, bend){
+  console.log(bend)
+  this.bend = bend
 }
 
 module.exports = player
@@ -2164,6 +2238,11 @@ model.prototype.samples = function(){
     if (region.sample) samples.push(region.sample)
   })
   return samples
+}
+
+model.prototype.pitchBend = function(channel, bend){
+  this.synth.pitchBend(channel, bend)
+  this.bend = bend
 }
 
 model.prototype.connect = function(destination, output){

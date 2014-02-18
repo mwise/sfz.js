@@ -55,4 +55,12 @@ Equalizer.prototype.connect = function(destination, output){
   this.output.connect(destination, output)
 }
 
+Equalizer.prototype.disconnect = function(output){
+  this.output.disconnect(output)
+}
+
+Equalizer.prototype.destroy = function(){
+  this.disconnect()
+}
+
 module.exports = Equalizer

@@ -78,6 +78,11 @@ model.prototype.samples = function(){
   return samples
 }
 
+model.prototype.pitchBend = function(channel, bend){
+  this.synth.pitchBend(channel, bend)
+  this.bend = bend
+}
+
 model.prototype.connect = function(destination, output){
   this.synth.connect(destination, output)
 }

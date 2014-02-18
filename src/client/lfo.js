@@ -35,8 +35,14 @@ LFO.prototype.start = function(){
   this.oscillator.start(delayTime)
 }
 
-LFO.prototype.connect = function(param) {
+LFO.prototype.connect = function(param){
   this.gainNode.connect(param)
+}
+
+LFO.prototype.destroy = function(){
+  this.oscillator.stop()
+  this.oscillator.disconnect()
+  this.gainNode.disconnect()
 }
 
 module.exports = LFO
