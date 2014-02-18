@@ -1427,7 +1427,7 @@ var Amplifier = function(opts){
   gainSignal.start()
   this.lfo.connect(this.input.gain)
 
-  this.ampeg = new EnvelopeGenerator({
+  this.eg = new EnvelopeGenerator({
     context: opts.context,
     delay: opts.eg_delay,
     start: opts.eg_start,
@@ -1439,7 +1439,7 @@ var Amplifier = function(opts){
     depth: 100
   }, { pitch: opts.pitch, velocity: opts.velocity })
 
-  this.ampeg.connect(this.output.gain)
+  this.eg.connect(this.output.gain)
 }
 
 Amplifier.prototype.connect = function(destination, output){
@@ -1448,11 +1448,11 @@ Amplifier.prototype.connect = function(destination, output){
 
 Amplifier.prototype.trigger = function(){
   this.lfo.start()
-  this.ampeg.trigger()
+  this.eg.trigger()
 }
 
 Amplifier.prototype.triggerRelease =  function(){
-  this.ampeg.triggerRelease()
+  this.eg.triggerRelease()
 }
 
 module.exports = Amplifier
@@ -1592,6 +1592,7 @@ module.exports = EnvelopeGenerator
 
 },{"underscore":2}],9:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
+  , EnvelopeGenerator = _dereq_("./envelope_generator")
   , LFO = _dereq_("./lfo")
   , Signal = _dereq_("./signal")
   , AudioMath = _dereq_("./audio_math")
@@ -1648,10 +1649,22 @@ var Filter = function(opts, noteOn){
   cutoffSignal.connect(this.frequency)
   cutoffSignal.start()
 
-  var freq2 = AudioMath.adjustFreqByCents(cutoffValue, this.lfo_depth)
-  var depth = freq2 - cutoffValue
+  this.eg = new EnvelopeGenerator({
+    context: opts.context,
+    delay: opts.eg_delay,
+    start: opts.eg_start,
+    attack: opts.eg_attack,
+    hold: opts.eg_hold,
+    decay: opts.eg_decay,
+    sustain: opts.eg_sustain,
+    release: opts.eg_release,
+    depth: 100
+  }, { pitch: opts.pitch, velocity: opts.velocity })
 
-  console.log(depth)
+  this.eg.connect(this.frequency)
+
+  var freq2 = AudioMath.adjustFreqByCents(cutoffValue, this.lfo_depth)
+    , depth = freq2 - cutoffValue
 
   this.lfo = new LFO({
     context: this.context,
@@ -1671,6 +1684,7 @@ var Filter = function(opts, noteOn){
 
   this.trigger = function(){
     this.lfo.start()
+    this.eg.trigger()
   }
 
 }
@@ -1685,7 +1699,7 @@ var FilterFactory = function(opts, noteOn){
 
 module.exports = FilterFactory
 
-},{"./audio_math":5,"./lfo":10,"./signal":11,"underscore":2}],10:[function(_dereq_,module,exports){
+},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":11,"underscore":2}],10:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
   , AudioMath = _dereq_("./audio_math")
 
@@ -1839,6 +1853,19 @@ model.prototype.setupFilter = function(region, noteOn){
     keycenter: region.fil_keycenter,
     veltrack: region.fil_veltrack,
     random: region.fil_random,
+    eg_delay: region.fileg_delay,
+    eg_start: region.fileg_start,
+    eg_attack: region.fileg_attack,
+    eg_hold: region.fileg_hold,
+    eg_decay: region.fileg_decay,
+    eg_sustain: region.fileg_sustain,
+    eg_release: region.fileg_release,
+    eg_vel2delay: region.fileg_vel2delay,
+    eg_vel2attack: region.fileg_vel2attack,
+    eg_vel2hold: region.fileg_vel2hold,
+    eg_vel2decay: region.fileg_vel2decay,
+    eg_vel2sustain: region.fileg_vel2sustain,
+    eg_vel2release: region.fileg_vel2release,
     lfo_delay: region.fillfo_delay,
     lfo_fade: region.fillfo_fade,
     lfo_freq: region.fillfo_freq,

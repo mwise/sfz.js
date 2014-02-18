@@ -1,4 +1,5 @@
 var _ = require("underscore")
+  , EnvelopeGenerator = require("./envelope_generator")
   , LFO = require("./lfo")
   , Signal = require("./signal")
   , AudioMath = require("./audio_math")
@@ -55,6 +56,20 @@ var Filter = function(opts, noteOn){
   cutoffSignal.connect(this.frequency)
   cutoffSignal.start()
 
+  this.eg = new EnvelopeGenerator({
+    context: opts.context,
+    delay: opts.eg_delay,
+    start: opts.eg_start,
+    attack: opts.eg_attack,
+    hold: opts.eg_hold,
+    decay: opts.eg_decay,
+    sustain: opts.eg_sustain,
+    release: opts.eg_release,
+    depth: 100
+  }, { pitch: opts.pitch, velocity: opts.velocity })
+
+  this.eg.connect(this.frequency)
+
   var freq2 = AudioMath.adjustFreqByCents(cutoffValue, this.lfo_depth)
     , depth = freq2 - cutoffValue
 
@@ -76,6 +91,7 @@ var Filter = function(opts, noteOn){
 
   this.trigger = function(){
     this.lfo.start()
+    this.eg.trigger()
   }
 
 }
