@@ -14,7 +14,7 @@ sfz.load = function(audioContext, url, callback){
 
 module.exports = sfz
 
-},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":14,"./src/sfz":20}],2:[function(_dereq_,module,exports){
+},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":15,"./src/sfz":21}],2:[function(_dereq_,module,exports){
 //     Underscore.js 1.6.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -1457,7 +1457,7 @@ Amplifier.prototype.triggerRelease =  function(){
 
 module.exports = Amplifier
 
-},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":12,"underscore":2}],5:[function(_dereq_,module,exports){
+},{"./audio_math":5,"./envelope_generator":8,"./lfo":11,"./signal":13,"underscore":2}],5:[function(_dereq_,module,exports){
 module.exports = {
   dbToGain: function(db){
     return Math.pow(10, (db / 20.0 )) * 1.0
@@ -1592,6 +1592,66 @@ module.exports = EnvelopeGenerator
 
 },{"underscore":2}],9:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
+
+var defaults = {
+  freq1: 50,
+  freq2: 500,
+  freq3: 5000,
+  bw1: 1,
+  bw2: 1,
+  bw3: 1,
+  gain1: 0,
+  gain2: 0,
+  gain3: 0,
+  vel2gain1: 0,
+  vel2gain2: 0,
+  vel2gain3: 0,
+  velocity: 0
+}
+
+var bwToQ = function(bw){
+  var x = Math.pow(2, bw)
+  return Math.sqrt(x) / (x - 1)
+}
+
+var Equalizer = function(opts){
+  _.defaults(opts, defaults)
+
+  this.input = this.eq1 = opts.context.createBiquadFilter()
+  this.eq2 = opts.context.createBiquadFilter()
+  this.output = this.eq3 = opts.context.createBiquadFilter()
+
+  this.input.connect(this.eq2)
+  this.eq2.connect(this.output)
+
+  // All of these are "peaking"-type filters
+  this.eq1.type = 5
+  this.eq2.type = 5
+  this.eq3.type = 5
+
+  this.eq1.frequency.value = opts.freq1
+  this.eq2.frequency.value = opts.freq1
+  this.eq3.frequency.value = opts.freq1
+
+  this.eq1.Q.value = bwToQ(opts.bw1)
+  this.eq2.Q.value = bwToQ(opts.bw2)
+  this.eq3.Q.value = bwToQ(opts.bw3)
+
+  var velFactor = opts.velocity / 127
+
+  this.eq1.gain.value = opts.gain1 + opts.vel2gain1 * velFactor
+  this.eq2.gain.value = opts.gain2 + opts.vel2gain2 * velFactor
+  this.eq3.gain.value = opts.gain3 + opts.vel2gain3 * velFactor
+}
+
+Equalizer.prototype.connect = function(destination, output){
+  this.output.connect(destination, output)
+}
+
+module.exports = Equalizer
+
+},{"underscore":2}],10:[function(_dereq_,module,exports){
+var _ = _dereq_("underscore")
   , EnvelopeGenerator = _dereq_("./envelope_generator")
   , LFO = _dereq_("./lfo")
   , Signal = _dereq_("./signal")
@@ -1699,7 +1759,7 @@ var FilterFactory = function(opts, noteOn){
 
 module.exports = FilterFactory
 
-},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":12,"underscore":2}],10:[function(_dereq_,module,exports){
+},{"./audio_math":5,"./envelope_generator":8,"./lfo":11,"./signal":13,"underscore":2}],11:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
   , AudioMath = _dereq_("./audio_math")
 
@@ -1743,7 +1803,7 @@ LFO.prototype.connect = function(param) {
 
 module.exports = LFO
 
-},{"./audio_math":5,"underscore":2}],11:[function(_dereq_,module,exports){
+},{"./audio_math":5,"underscore":2}],12:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
   , EnvelopeGenerator = _dereq_("./envelope_generator")
   , LFO = _dereq_("./lfo")
@@ -1788,7 +1848,7 @@ var PannerFactory = function(opts){
 
 module.exports = PannerFactory
 
-},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":12,"underscore":2}],12:[function(_dereq_,module,exports){
+},{"./audio_math":5,"./envelope_generator":8,"./lfo":11,"./signal":13,"underscore":2}],13:[function(_dereq_,module,exports){
 var Signal = function(opts){
   this.context = opts.context
   if (typeof opts.value == "undefined") opts.value == 1
@@ -1814,11 +1874,12 @@ var SignalFactory = function(opts){
 
 module.exports = SignalFactory
 
-},{}],13:[function(_dereq_,module,exports){
+},{}],14:[function(_dereq_,module,exports){
 var BufferSource = _dereq_("./buffer_source")
   , Filter = _dereq_("./filter")
   , Amplifier = _dereq_("./amplifier")
   , Panner = _dereq_("./panner")
+  , Equalizer = _dereq_("./equalizer")
 
 var model = function(buffer, region, noteOn, audioContext){
   this.audioContext = audioContext
@@ -1829,6 +1890,7 @@ var model = function(buffer, region, noteOn, audioContext){
   this.setupFilter(region, noteOn)
   this.setupAmp(region, noteOn)
   this.setupPanner(region, noteOn)
+  this.setupEqualizer(region, noteOn)
 
   if (this.filter) {
     this.source.connect(this.filter)
@@ -1838,7 +1900,8 @@ var model = function(buffer, region, noteOn, audioContext){
   }
 
   this.amp.connect(this.panner)
-  this.panner.connect(this.output)
+  this.panner.connect(this.equalizer.input)
+  this.equalizer.connect(this.output)
 }
 
 model.prototype.setupSource = function(buffer, region, noteOn){
@@ -1934,6 +1997,25 @@ model.prototype.setupPanner = function(region, noteOn){
   })
 }
 
+model.prototype.setupEqualizer = function(region, noteOn){
+  this.equalizer = new Equalizer({
+    context: this.audioContext,
+    velocity: noteOn.velocity,
+    freq1: region.eq1_freq,
+    freq2: region.eq2_freq,
+    freq3: region.eq3_freq,
+    bw1: region.eq1_bw,
+    bw2: region.eq2_bw,
+    bw3: region.eq3_bw,
+    gain1: region.eq1_gain,
+    gain2: region.eq2_gain,
+    gain3: region.eq3_gain,
+    vel2gain1: region.eq1_vel2gain,
+    vel2gain2: region.eq2_vel2gain,
+    vel2gain3: region.eq3_vel2gain
+  })
+}
+
 model.prototype.start = function(){
   this.amp.trigger()
   this.filter.trigger()
@@ -1954,7 +2036,7 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./amplifier":4,"./buffer_source":7,"./filter":9,"./panner":11}],14:[function(_dereq_,module,exports){
+},{"./amplifier":4,"./buffer_source":7,"./equalizer":9,"./filter":10,"./panner":12}],15:[function(_dereq_,module,exports){
 var BufferLoader = _dereq_("./buffer_loader")
   , Voice = _dereq_("./voice")
   , _ = _dereq_("underscore")
@@ -2003,7 +2085,7 @@ player.prototype.play = function(region, noteOn){
 
 module.exports = player
 
-},{"./buffer_loader":6,"./voice":13,"underscore":2}],15:[function(_dereq_,module,exports){
+},{"./buffer_loader":6,"./voice":14,"underscore":2}],16:[function(_dereq_,module,exports){
 var  Region = _dereq_("./region")
   , NullSynth = _dereq_("./null_synth")
   , _ = _dereq_("underscore")
@@ -2094,13 +2176,13 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./null_synth":16,"./region":19,"underscore":2}],16:[function(_dereq_,module,exports){
+},{"./null_synth":17,"./region":20,"underscore":2}],17:[function(_dereq_,module,exports){
 model = function(opts){
 }
 
 module.exports = model
 
-},{}],17:[function(_dereq_,module,exports){
+},{}],18:[function(_dereq_,module,exports){
 var  _ = _dereq_("underscore")
 
 var MAX_INT = 4294967296
@@ -3290,7 +3372,7 @@ Parameter.defaultValues = defaultValues
 
 module.exports = Parameter
 
-},{"underscore":2}],18:[function(_dereq_,module,exports){
+},{"underscore":2}],19:[function(_dereq_,module,exports){
 module.exports = (function() {
   /*
    * Generated by PEG.js 0.8.0.
@@ -7909,7 +7991,7 @@ module.exports = (function() {
   };
 })();
 
-},{}],19:[function(_dereq_,module,exports){
+},{}],20:[function(_dereq_,module,exports){
 var  Parameter = _dereq_("./parameter")
   , _ = _dereq_("underscore")
 
@@ -7935,7 +8017,7 @@ Region = function(opts){
 
 module.exports = Region
 
-},{"./parameter":17,"underscore":2}],20:[function(_dereq_,module,exports){
+},{"./parameter":18,"underscore":2}],21:[function(_dereq_,module,exports){
 var sfz = {}
   , Parser = _dereq_("./parser")
 
@@ -7951,6 +8033,6 @@ sfz.parse = function(str, driver, audioContext){
 
 module.exports = sfz
 
-},{"./instrument":15,"./parser":18}]},{},[1])
+},{"./instrument":16,"./parser":19}]},{},[1])
 (1)
 });

@@ -2,6 +2,7 @@ var BufferSource = require("./buffer_source")
   , Filter = require("./filter")
   , Amplifier = require("./amplifier")
   , Panner = require("./panner")
+  , Equalizer = require("./equalizer")
 
 var model = function(buffer, region, noteOn, audioContext){
   this.audioContext = audioContext
@@ -12,6 +13,7 @@ var model = function(buffer, region, noteOn, audioContext){
   this.setupFilter(region, noteOn)
   this.setupAmp(region, noteOn)
   this.setupPanner(region, noteOn)
+  this.setupEqualizer(region, noteOn)
 
   if (this.filter) {
     this.source.connect(this.filter)
@@ -21,7 +23,8 @@ var model = function(buffer, region, noteOn, audioContext){
   }
 
   this.amp.connect(this.panner)
-  this.panner.connect(this.output)
+  this.panner.connect(this.equalizer.input)
+  this.equalizer.connect(this.output)
 }
 
 model.prototype.setupSource = function(buffer, region, noteOn){
@@ -114,6 +117,25 @@ model.prototype.setupPanner = function(region, noteOn){
     pan: region.pan,
     width: region.width,
     position: region.position
+  })
+}
+
+model.prototype.setupEqualizer = function(region, noteOn){
+  this.equalizer = new Equalizer({
+    context: this.audioContext,
+    velocity: noteOn.velocity,
+    freq1: region.eq1_freq,
+    freq2: region.eq2_freq,
+    freq3: region.eq3_freq,
+    bw1: region.eq1_bw,
+    bw2: region.eq2_bw,
+    bw3: region.eq3_bw,
+    gain1: region.eq1_gain,
+    gain2: region.eq2_gain,
+    gain3: region.eq3_gain,
+    vel2gain1: region.eq1_vel2gain,
+    vel2gain2: region.eq2_vel2gain,
+    vel2gain3: region.eq3_vel2gain
   })
 }
 
