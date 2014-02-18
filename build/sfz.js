@@ -14,7 +14,7 @@ sfz.load = function(audioContext, url, callback){
 
 module.exports = sfz
 
-},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":13,"./src/sfz":19}],2:[function(_dereq_,module,exports){
+},{"./src/client/ajax_loader":3,"./src/client/web_audio_synth":14,"./src/sfz":20}],2:[function(_dereq_,module,exports){
 //     Underscore.js 1.6.0
 //     http://underscorejs.org
 //     (c) 2009-2014 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -1457,7 +1457,7 @@ Amplifier.prototype.triggerRelease =  function(){
 
 module.exports = Amplifier
 
-},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":11,"underscore":2}],5:[function(_dereq_,module,exports){
+},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":12,"underscore":2}],5:[function(_dereq_,module,exports){
 module.exports = {
   dbToGain: function(db){
     return Math.pow(10, (db / 20.0 )) * 1.0
@@ -1699,7 +1699,7 @@ var FilterFactory = function(opts, noteOn){
 
 module.exports = FilterFactory
 
-},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":11,"underscore":2}],10:[function(_dereq_,module,exports){
+},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":12,"underscore":2}],10:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
   , AudioMath = _dereq_("./audio_math")
 
@@ -1744,6 +1744,51 @@ LFO.prototype.connect = function(param) {
 module.exports = LFO
 
 },{"./audio_math":5,"underscore":2}],11:[function(_dereq_,module,exports){
+var _ = _dereq_("underscore")
+  , EnvelopeGenerator = _dereq_("./envelope_generator")
+  , LFO = _dereq_("./lfo")
+  , Signal = _dereq_("./signal")
+  , AudioMath = _dereq_("./audio_math")
+
+
+var defaults = {
+  pan: 0,
+  width: 0,
+  position: 0
+}
+
+var Panner = function(opts){
+  _.extend(this, opts)
+  _.defaults(this, defaults)
+
+  this.updatePosition = function(position){
+    this.panningModel = "equalpower"
+    this.distanceModel = "linear"
+
+    var xDeg = position * 45.0
+    var zDeg = xDeg + 90
+    if (zDeg > 90) zDeg = 180 - zDeg
+
+    var scale = 10
+    var x = Math.sin(xDeg * (Math.PI / 180)) * scale
+
+    this.setPosition(x, 0, -1)
+  }
+
+  this.updatePosition(this.position)
+}
+
+
+var PannerFactory = function(opts){
+  var panner = opts.context.createPanner()
+  Panner.call(panner, opts)
+
+  return panner
+}
+
+module.exports = PannerFactory
+
+},{"./audio_math":5,"./envelope_generator":8,"./lfo":10,"./signal":12,"underscore":2}],12:[function(_dereq_,module,exports){
 var Signal = function(opts){
   this.context = opts.context
   if (typeof opts.value == "undefined") opts.value == 1
@@ -1769,10 +1814,11 @@ var SignalFactory = function(opts){
 
 module.exports = SignalFactory
 
-},{}],12:[function(_dereq_,module,exports){
+},{}],13:[function(_dereq_,module,exports){
 var BufferSource = _dereq_("./buffer_source")
   , Filter = _dereq_("./filter")
   , Amplifier = _dereq_("./amplifier")
+  , Panner = _dereq_("./panner")
 
 var model = function(buffer, region, noteOn, audioContext){
   this.audioContext = audioContext
@@ -1782,6 +1828,7 @@ var model = function(buffer, region, noteOn, audioContext){
   this.setupSource(buffer, region, noteOn)
   this.setupFilter(region, noteOn)
   this.setupAmp(region, noteOn)
+  this.setupPanner(region, noteOn)
 
   if (this.filter) {
     this.source.connect(this.filter)
@@ -1790,7 +1837,8 @@ var model = function(buffer, region, noteOn, audioContext){
     this.source.connect(this.amp.input)
   }
 
-  this.amp.connect(this.output)
+  this.amp.connect(this.panner)
+  this.panner.connect(this.output)
 }
 
 model.prototype.setupSource = function(buffer, region, noteOn){
@@ -1877,6 +1925,15 @@ model.prototype.setupFilter = function(region, noteOn){
   }, noteOn)
 }
 
+model.prototype.setupPanner = function(region, noteOn){
+  this.panner = new Panner({
+    context: this.audioContext,
+    pan: region.pan,
+    width: region.width,
+    position: region.position
+  })
+}
+
 model.prototype.start = function(){
   this.amp.trigger()
   this.filter.trigger()
@@ -1897,7 +1954,7 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./amplifier":4,"./buffer_source":7,"./filter":9}],13:[function(_dereq_,module,exports){
+},{"./amplifier":4,"./buffer_source":7,"./filter":9,"./panner":11}],14:[function(_dereq_,module,exports){
 var BufferLoader = _dereq_("./buffer_loader")
   , Voice = _dereq_("./voice")
   , _ = _dereq_("underscore")
@@ -1946,7 +2003,7 @@ player.prototype.play = function(region, noteOn){
 
 module.exports = player
 
-},{"./buffer_loader":6,"./voice":12,"underscore":2}],14:[function(_dereq_,module,exports){
+},{"./buffer_loader":6,"./voice":13,"underscore":2}],15:[function(_dereq_,module,exports){
 var  Region = _dereq_("./region")
   , NullSynth = _dereq_("./null_synth")
   , _ = _dereq_("underscore")
@@ -2037,13 +2094,13 @@ model.prototype.disconnect = function(output){
 
 module.exports = model
 
-},{"./null_synth":15,"./region":18,"underscore":2}],15:[function(_dereq_,module,exports){
+},{"./null_synth":16,"./region":19,"underscore":2}],16:[function(_dereq_,module,exports){
 model = function(opts){
 }
 
 module.exports = model
 
-},{}],16:[function(_dereq_,module,exports){
+},{}],17:[function(_dereq_,module,exports){
 var  _ = _dereq_("underscore")
 
 var MAX_INT = 4294967296
@@ -3233,7 +3290,7 @@ Parameter.defaultValues = defaultValues
 
 module.exports = Parameter
 
-},{"underscore":2}],17:[function(_dereq_,module,exports){
+},{"underscore":2}],18:[function(_dereq_,module,exports){
 module.exports = (function() {
   /*
    * Generated by PEG.js 0.8.0.
@@ -7852,7 +7909,7 @@ module.exports = (function() {
   };
 })();
 
-},{}],18:[function(_dereq_,module,exports){
+},{}],19:[function(_dereq_,module,exports){
 var  Parameter = _dereq_("./parameter")
   , _ = _dereq_("underscore")
 
@@ -7878,7 +7935,7 @@ Region = function(opts){
 
 module.exports = Region
 
-},{"./parameter":16,"underscore":2}],19:[function(_dereq_,module,exports){
+},{"./parameter":17,"underscore":2}],20:[function(_dereq_,module,exports){
 var sfz = {}
   , Parser = _dereq_("./parser")
 
@@ -7894,6 +7951,6 @@ sfz.parse = function(str, driver, audioContext){
 
 module.exports = sfz
 
-},{"./instrument":14,"./parser":17}]},{},[1])
+},{"./instrument":15,"./parser":18}]},{},[1])
 (1)
 });

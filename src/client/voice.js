@@ -1,6 +1,7 @@
 var BufferSource = require("./buffer_source")
   , Filter = require("./filter")
   , Amplifier = require("./amplifier")
+  , Panner = require("./panner")
 
 var model = function(buffer, region, noteOn, audioContext){
   this.audioContext = audioContext
@@ -10,6 +11,7 @@ var model = function(buffer, region, noteOn, audioContext){
   this.setupSource(buffer, region, noteOn)
   this.setupFilter(region, noteOn)
   this.setupAmp(region, noteOn)
+  this.setupPanner(region, noteOn)
 
   if (this.filter) {
     this.source.connect(this.filter)
@@ -18,7 +20,8 @@ var model = function(buffer, region, noteOn, audioContext){
     this.source.connect(this.amp.input)
   }
 
-  this.amp.connect(this.output)
+  this.amp.connect(this.panner)
+  this.panner.connect(this.output)
 }
 
 model.prototype.setupSource = function(buffer, region, noteOn){
@@ -103,6 +106,15 @@ model.prototype.setupFilter = function(region, noteOn){
     lfo_freqchanaft: region.fillfo_freqchanaft,
     lfo_freqpolyaft: region.fillfo_freqpolyaft
   }, noteOn)
+}
+
+model.prototype.setupPanner = function(region, noteOn){
+  this.panner = new Panner({
+    context: this.audioContext,
+    pan: region.pan,
+    width: region.width,
+    position: region.position
+  })
 }
 
 model.prototype.start = function(){
