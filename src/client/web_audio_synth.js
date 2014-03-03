@@ -8,6 +8,7 @@ var player = function(instrument, audioContext){
   var sampleUrls = instrument.samples()
   this.loadBuffers(sampleUrls)
   this.voicesToRelease = {}
+  this.activeVoices = window.voices = {}
   this.bend = 0
 }
 
@@ -29,9 +30,14 @@ player.prototype.onBuffersLoaded = function(buffers){
 
 player.prototype.play = function(region, noteOn){
   var buffer = this.buffers[region.sample]
+  var self = this
 
   if (noteOn.velocity != 0) {
-    var voice = new Voice(buffer, region, noteOn, this.context)
+    var voice = new Voice(buffer, region, noteOn, this.context, this.bend)
+    self.activeVoices[voice.voiceId] = voice
+    voice.onended = function(){
+      delete self.activeVoices[voice.voiceId]
+    }
     if (region.trigger == "attack") {
       this.voicesToRelease[noteOn.pitch] = voice
     }
@@ -47,7 +53,7 @@ player.prototype.play = function(region, noteOn){
 }
 
 player.prototype.pitchBend = function(channel, bend){
-  console.log(bend)
+  _(this.activeVoices).invoke("pitchBend", bend)
   this.bend = bend
 }
 

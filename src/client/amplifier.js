@@ -60,8 +60,6 @@ var Amplifier = function(opts){
     depth: 100
   }, { pitch: opts.pitch, velocity: opts.velocity })
 
-  this.eg.onended = this.onended
-
   this.eg.connect(this.output.gain)
 }
 
@@ -73,7 +71,9 @@ Amplifier.prototype.disconnect = function(output){
   this.output.disconnect(output)
 }
 
-Amplifier.prototype.trigger = function(){
+Amplifier.prototype.trigger = function(onended){
+  this.eg.onended = onended
+
   this.lfo.start()
   this.eg.trigger()
 }

@@ -6,15 +6,38 @@ var pitchToFreq = function(pitch){
 
 var BufferSource = function(opts){
   this.buffer = opts.buffer
+  this.opts = opts
+  this.bend = opts.bend
 
-  var cents = ((opts.pitch - opts.keycenter) * opts.keytrack) + opts.tune
-  cents += (opts.veltrack * opts.velocity / 127)
+  this.updatePlaybackRate = function(){
+    var opts = this.opts
+    var cents = ((opts.pitch - opts.keycenter) * opts.keytrack) + opts.tune
+    cents += (opts.veltrack * opts.velocity / 127)
 
-  var noteFreq = pitchToFreq(opts.pitch + opts.transpose) * Math.pow((Math.pow(2, 1/1200)), cents)
-    , playbackRate = noteFreq / pitchToFreq(opts.keycenter)
+    var bendRange = 8191
+      , bendDepth = opts.bend_up
 
-  this.playbackRate.value = playbackRate
+    if (this.bend < 0) {
+      bendRange = -8192
+      bendDepth = opts.bend_down
+    }
+
+    cents += bendDepth * this.bend / bendRange
+
+    var noteFreq = pitchToFreq(opts.pitch + opts.transpose) * Math.pow((Math.pow(2, 1/1200)), cents)
+      , playbackRate = noteFreq / pitchToFreq(opts.keycenter)
+
+    this.playbackRate.value = playbackRate
+  }
+
+  this.pitchBend = function(bend){
+    this.bend = bend
+    this.updatePlaybackRate()
+  }
+
+  this.updatePlaybackRate()
 }
+
 
 var BufferSourceFactory = function(opts){
   var source = opts.context.createBufferSource()

@@ -4,12 +4,16 @@ var BufferSource = require("./buffer_source")
   , Panner = require("./panner")
   , Equalizer = require("./equalizer")
 
-var model = function(buffer, region, noteOn, audioContext){
+var voiceNumber = 0
+
+var model = function(buffer, region, noteOn, audioContext, bend){
   this.audioContext = audioContext
+  this.voiceId = "voice" + voiceNumber
+  voiceNumber += 1
 
   this.output = audioContext.createGainNode()
 
-  this.setupSource(buffer, region, noteOn)
+  this.setupSource(buffer, region, noteOn, bend)
   this.setupFilter(region, noteOn)
   this.setupAmp(region, noteOn)
   this.setupPanner(region, noteOn)
@@ -27,7 +31,7 @@ var model = function(buffer, region, noteOn, audioContext){
   this.equalizer.connect(this.output)
 }
 
-model.prototype.setupSource = function(buffer, region, noteOn){
+model.prototype.setupSource = function(buffer, region, noteOn, bend){
   this.source = new BufferSource({
     context: this.audioContext,
     buffer: buffer,
@@ -37,7 +41,11 @@ model.prototype.setupSource = function(buffer, region, noteOn){
     keytrack: region.pitch_keytrack,
     transpose: region.transpose,
     tune: region.tune,
-    veltrack: region.pitch_veltrack
+    veltrack: region.pitch_veltrack,
+    bend: bend,
+    bend_up: region.bend_up,
+    bend_down: region.bend_down,
+    bend_step: region.bend_step
   })
 }
 
@@ -144,11 +152,11 @@ model.prototype.setupEqualizer = function(region, noteOn){
 
 model.prototype.start = function(){
   var self = this
-  this.amp.oneneded = function(){
+  var onended = function(){
     self.source.stop()
-    self.destroy
+    self.destroy()
   }
-  this.amp.trigger()
+  this.amp.trigger(onended)
   this.filter.trigger()
   this.source.start(0)
 }
@@ -176,6 +184,12 @@ model.prototype.destroy = function(){
   this.amp = null
   this.panner = null
   this.equalizer = null
+
+  if (this.onended) this.onended()
+}
+
+model.prototype.pitchBend = function(bend){
+  this.source.pitchBend(bend)
 }
 
 module.exports = model

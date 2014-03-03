@@ -1440,8 +1440,6 @@ var Amplifier = function(opts){
     depth: 100
   }, { pitch: opts.pitch, velocity: opts.velocity })
 
-  this.eg.onended = this.onended
-
   this.eg.connect(this.output.gain)
 }
 
@@ -1453,7 +1451,9 @@ Amplifier.prototype.disconnect = function(output){
   this.output.disconnect(output)
 }
 
-Amplifier.prototype.trigger = function(){
+Amplifier.prototype.trigger = function(onended){
+  this.eg.onended = onended
+
   this.lfo.start()
   this.eg.trigger()
 }
@@ -1546,15 +1546,38 @@ var pitchToFreq = function(pitch){
 
 var BufferSource = function(opts){
   this.buffer = opts.buffer
+  this.opts = opts
+  this.bend = opts.bend
 
-  var cents = ((opts.pitch - opts.keycenter) * opts.keytrack) + opts.tune
-  cents += (opts.veltrack * opts.velocity / 127)
+  this.updatePlaybackRate = function(){
+    var opts = this.opts
+    var cents = ((opts.pitch - opts.keycenter) * opts.keytrack) + opts.tune
+    cents += (opts.veltrack * opts.velocity / 127)
 
-  var noteFreq = pitchToFreq(opts.pitch + opts.transpose) * Math.pow((Math.pow(2, 1/1200)), cents)
-    , playbackRate = noteFreq / pitchToFreq(opts.keycenter)
+    var bendRange = 8191
+      , bendDepth = opts.bend_up
 
-  this.playbackRate.value = playbackRate
+    if (this.bend < 0) {
+      bendRange = -8192
+      bendDepth = opts.bend_down
+    }
+
+    cents += bendDepth * this.bend / bendRange
+
+    var noteFreq = pitchToFreq(opts.pitch + opts.transpose) * Math.pow((Math.pow(2, 1/1200)), cents)
+      , playbackRate = noteFreq / pitchToFreq(opts.keycenter)
+
+    this.playbackRate.value = playbackRate
+  }
+
+  this.pitchBend = function(bend){
+    this.bend = bend
+    this.updatePlaybackRate()
+  }
+
+  this.updatePlaybackRate()
 }
+
 
 var BufferSourceFactory = function(opts){
   var source = opts.context.createBufferSource()
@@ -1936,12 +1959,16 @@ var BufferSource = _dereq_("./buffer_source")
   , Panner = _dereq_("./panner")
   , Equalizer = _dereq_("./equalizer")
 
-var model = function(buffer, region, noteOn, audioContext){
+var voiceNumber = 0
+
+var model = function(buffer, region, noteOn, audioContext, bend){
   this.audioContext = audioContext
+  this.voiceId = "voice" + voiceNumber
+  voiceNumber += 1
 
   this.output = audioContext.createGainNode()
 
-  this.setupSource(buffer, region, noteOn)
+  this.setupSource(buffer, region, noteOn, bend)
   this.setupFilter(region, noteOn)
   this.setupAmp(region, noteOn)
   this.setupPanner(region, noteOn)
@@ -1959,7 +1986,7 @@ var model = function(buffer, region, noteOn, audioContext){
   this.equalizer.connect(this.output)
 }
 
-model.prototype.setupSource = function(buffer, region, noteOn){
+model.prototype.setupSource = function(buffer, region, noteOn, bend){
   this.source = new BufferSource({
     context: this.audioContext,
     buffer: buffer,
@@ -1969,7 +1996,11 @@ model.prototype.setupSource = function(buffer, region, noteOn){
     keytrack: region.pitch_keytrack,
     transpose: region.transpose,
     tune: region.tune,
-    veltrack: region.pitch_veltrack
+    veltrack: region.pitch_veltrack,
+    bend: bend,
+    bend_up: region.bend_up,
+    bend_down: region.bend_down,
+    bend_step: region.bend_step
   })
 }
 
@@ -2076,11 +2107,11 @@ model.prototype.setupEqualizer = function(region, noteOn){
 
 model.prototype.start = function(){
   var self = this
-  this.amp.oneneded = function(){
-    //self.source.stop()
-    //self.destroy
+  var onended = function(){
+    self.source.stop()
+    self.destroy()
   }
-  this.amp.trigger()
+  this.amp.trigger(onended)
   this.filter.trigger()
   this.source.start(0)
 }
@@ -2108,6 +2139,12 @@ model.prototype.destroy = function(){
   this.amp = null
   this.panner = null
   this.equalizer = null
+
+  if (this.onended) this.onended()
+}
+
+model.prototype.pitchBend = function(bend){
+  this.source.pitchBend(bend)
 }
 
 module.exports = model
@@ -2123,6 +2160,7 @@ var player = function(instrument, audioContext){
   var sampleUrls = instrument.samples()
   this.loadBuffers(sampleUrls)
   this.voicesToRelease = {}
+  this.activeVoices = window.voices = {}
   this.bend = 0
 }
 
@@ -2144,9 +2182,14 @@ player.prototype.onBuffersLoaded = function(buffers){
 
 player.prototype.play = function(region, noteOn){
   var buffer = this.buffers[region.sample]
+  var self = this
 
   if (noteOn.velocity != 0) {
-    var voice = new Voice(buffer, region, noteOn, this.context)
+    var voice = new Voice(buffer, region, noteOn, this.context, this.bend)
+    self.activeVoices[voice.voiceId] = voice
+    voice.onended = function(){
+      delete self.activeVoices[voice.voiceId]
+    }
     if (region.trigger == "attack") {
       this.voicesToRelease[noteOn.pitch] = voice
     }
@@ -2162,7 +2205,7 @@ player.prototype.play = function(region, noteOn){
 }
 
 player.prototype.pitchBend = function(channel, bend){
-  console.log(bend)
+  _(this.activeVoices).invoke("pitchBend", bend)
   this.bend = bend
 }
 
