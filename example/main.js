@@ -4,6 +4,7 @@ var ac = new webkitAudioContext()
 var sfzUrl = "/example/piano.mp3.sfz"
 var sfzUrl = "/example/Woodwinds - Oboe Solo.sfz"
 var sfzUrl = "/example/trumpet.sfz"
+var sfzUrl = "/example/horn-solo.mp3.sfz"
 sfz.load(ac, sfzUrl, function(instrument){
   window.instrument = instrument
 

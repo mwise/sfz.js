@@ -15,6 +15,7 @@ var Amplifier = function(opts){
   this.input.connect(this.output)
 
   var depth = AudioMath.dbToGain(opts.lfo_depth)
+    , velScalar = opts.velocity / 127.0
 
   this.lfo = new LFO({
     context: opts.context,
@@ -34,7 +35,7 @@ var Amplifier = function(opts){
 
   db = db + noteGainAdj
 
-  var velGainAdj = (opts.veltrack / 100.0) * opts.velocity / 127.0
+  var velGainAdj = (opts.veltrack / 100.0) * velScalar
     , gain = AudioMath.dbToGain(db)
 
   gain = gain + (gain * velGainAdj)
@@ -49,13 +50,13 @@ var Amplifier = function(opts){
 
   this.eg = new EnvelopeGenerator({
     context: opts.context,
-    delay: opts.eg_delay,
+    delay: opts.eg_delay + opts.eg_vel2delay * velScalar,
     start: opts.eg_start,
-    attack: opts.eg_attack,
-    hold: opts.eg_hold,
-    decay: opts.eg_decay,
-    sustain: opts.eg_sustain,
-    release: opts.eg_release,
+    attack: opts.eg_attack + opts.eg_vel2attack * velScalar,
+    hold: opts.eg_hold + opts.eg_vel2hold * velScalar,
+    decay: opts.eg_decay + opts.eg_vel2decay * velScalar,
+    sustain: opts.eg_sustain + opts.eg_vel2sustain * velScalar,
+    release: opts.eg_release + opts.eg_vel2release * velScalar,
     depth: 100
   }, { pitch: opts.pitch, velocity: opts.velocity })
 
