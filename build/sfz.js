@@ -1593,11 +1593,15 @@ module.exports = EnvelopeGenerator
 
 },{"underscore":2}],9:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
+  , AudioMath = _dereq_("./audio_math")
 
 var defaults = {
   freq1: 50,
   freq2: 500,
   freq3: 5000,
+  vel2freq1: 0,
+  vel2freq2: 0,
+  vel2freq3: 0,
   bw1: 1,
   bw2: 1,
   bw3: 1,
@@ -1618,6 +1622,8 @@ var bwToQ = function(bw){
 var Equalizer = function(opts){
   _.defaults(opts, defaults)
 
+  var velScalar = opts.velocity / 127
+
   this.input = this.eq1 = opts.context.createBiquadFilter()
   this.eq2 = opts.context.createBiquadFilter()
   this.output = this.eq3 = opts.context.createBiquadFilter()
@@ -1630,19 +1636,17 @@ var Equalizer = function(opts){
   this.eq2.type = 5
   this.eq3.type = 5
 
-  this.eq1.frequency.value = opts.freq1
-  this.eq2.frequency.value = opts.freq1
-  this.eq3.frequency.value = opts.freq1
+  this.eq1.frequency.value = opts.freq1 + opts.vel2freq1 * velScalar
+  this.eq2.frequency.value = opts.freq2 + opts.vel2freq2 * velScalar
+  this.eq3.frequency.value = opts.freq3 + opts.vel2freq3 * velScalar
 
   this.eq1.Q.value = bwToQ(opts.bw1)
   this.eq2.Q.value = bwToQ(opts.bw2)
   this.eq3.Q.value = bwToQ(opts.bw3)
 
-  var velFactor = opts.velocity / 127
-
-  this.eq1.gain.value = opts.gain1 + opts.vel2gain1 * velFactor
-  this.eq2.gain.value = opts.gain2 + opts.vel2gain2 * velFactor
-  this.eq3.gain.value = opts.gain3 + opts.vel2gain3 * velFactor
+  this.eq1.gain.value = AudioMath.dbToGain(opts.gain1 + opts.vel2gain1 * velScalar)
+  this.eq2.gain.value = AudioMath.dbToGain(opts.gain2 + opts.vel2gain2 * velScalar)
+  this.eq3.gain.value = AudioMath.dbToGain(opts.gain3 + opts.vel2gain3 * velScalar)
 }
 
 Equalizer.prototype.connect = function(destination, output){
@@ -1651,7 +1655,7 @@ Equalizer.prototype.connect = function(destination, output){
 
 module.exports = Equalizer
 
-},{"underscore":2}],10:[function(_dereq_,module,exports){
+},{"./audio_math":5,"underscore":2}],10:[function(_dereq_,module,exports){
 var _ = _dereq_("underscore")
   , EnvelopeGenerator = _dereq_("./envelope_generator")
   , LFO = _dereq_("./lfo")
@@ -2006,6 +2010,9 @@ model.prototype.setupEqualizer = function(region, noteOn){
     freq1: region.eq1_freq,
     freq2: region.eq2_freq,
     freq3: region.eq3_freq,
+    vel2freq1: region.eq1_vel2freq,
+    vel2freq2: region.eq2_vel2freq,
+    vel2freq3: region.eq3_vel2freq,
     bw1: region.eq1_bw,
     bw2: region.eq2_bw,
     bw3: region.eq3_bw,
