@@ -5,12 +5,13 @@ var sfzUrl = "/example/piano.mp3.sfz"
 var sfzUrl = "/example/Woodwinds - Oboe Solo.sfz"
 var sfzUrl = "/example/trumpet.sfz"
 var sfzUrl = "/example/horn-solo.mp3.sfz"
+var sfzUrl = "/Samples/gen_user_wav/000/000_Stereo_Grand.sfz"
 
 var keyCodes = [65, 83, 68, 70, 71, 72, 74, 75]
 
-
 sfz.load(ac, sfzUrl, function(instrument){
   window.instrument = instrument
+  //console.log(instrument)
 
   midiSelect.on("noteOn", function(e){
     instrument.noteOn(e.detail.channel, e.detail.pitch, e.detail.velocity)

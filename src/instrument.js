@@ -10,6 +10,8 @@ model = function(opts){
     return new Region(regionDefinition)
   })
 
+  this.control = opts.control
+
   this.bend = 0
   this.chanaft = 64
   this.polyaft = 64

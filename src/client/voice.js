@@ -6,6 +6,8 @@ var BufferSource = require("./buffer_source")
 
 var voiceNumber = 0
 
+var sampleRate = 48000
+
 var model = function(buffer, region, noteOn, audioContext, bend){
   this.audioContext = audioContext
   this.voiceId = "voice" + voiceNumber
@@ -13,11 +15,19 @@ var model = function(buffer, region, noteOn, audioContext, bend){
 
   this.output = audioContext.createGainNode()
 
+  console.log(region.regionId, "vel:" + noteOn.velocity, "lovel:" + region.lovel, "hivel:" + region.hivel, "lokey:"+region.lokey, "hikey:"+region.hikey)
+
   this.setupSource(buffer, region, noteOn, bend)
   this.setupFilter(region, noteOn)
   this.setupAmp(region, noteOn)
   this.setupPanner(region, noteOn)
   this.setupEqualizer(region, noteOn)
+
+  if (region.offset && region.end) {
+    this.offset = region.offset / sampleRate
+    this.end = region.end / sampleRate
+    this.duration = this.end - this.offset
+  }
 
   if (this.filter) {
     this.source.connect(this.filter)
@@ -47,6 +57,12 @@ model.prototype.setupSource = function(buffer, region, noteOn, bend){
     bend_down: region.bend_down,
     bend_step: region.bend_step
   })
+
+  if (region.loop_start && region.loop_end && region.loop_mode == "loop_continuous") {
+    this.source.loopStart = region.loop_start / sampleRate
+    this.source.loopEnd = region.loop_end / sampleRate
+    this.source.loop = true
+  }
 }
 
 model.prototype.setupAmp = function(region, noteOn){
@@ -158,7 +174,11 @@ model.prototype.start = function(){
   }
   this.amp.trigger(onended)
   this.filter.trigger()
-  this.source.start(0)
+  if (this.offset && this.duration) {
+    this.source.start(0, this.offset, this.duration)
+  } else {
+    this.source.start(0)
+  }
 }
 
 model.prototype.stop = function(){

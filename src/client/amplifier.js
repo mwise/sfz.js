@@ -30,10 +30,13 @@ var Amplifier = function(opts){
     freqpolyaft: opts.lfo_freqpolyaft
   })
 
+
+  var volume = opts.volume || 0
+
   var db = -20 * Math.log(Math.pow(127, 2) / Math.pow(opts.velocity, 2))
     , noteGainAdj = (opts.pitch - opts.keycenter) * opts.keytrack
 
-  db = db + noteGainAdj
+  db = volume + db + noteGainAdj
 
   var velGainAdj = (opts.veltrack / 100.0) * velScalar
     , gain = AudioMath.dbToGain(db)
@@ -48,6 +51,8 @@ var Amplifier = function(opts){
   this.gainSignal.start()
   this.lfo.connect(this.input.gain)
 
+  this.eg_release = opts.eg_release + opts.eg_vel2release * velScalar
+
   this.eg = new EnvelopeGenerator({
     context: opts.context,
     delay: opts.eg_delay + opts.eg_vel2delay * velScalar,
@@ -56,7 +61,7 @@ var Amplifier = function(opts){
     hold: opts.eg_hold + opts.eg_vel2hold * velScalar,
     decay: opts.eg_decay + opts.eg_vel2decay * velScalar,
     sustain: opts.eg_sustain + opts.eg_vel2sustain * velScalar,
-    release: opts.eg_release + opts.eg_vel2release * velScalar,
+    release: this.eg_release,
     depth: 100
   }, { pitch: opts.pitch, velocity: opts.velocity })
 

@@ -27,6 +27,8 @@ EnvelopeGenerator.prototype.trigger = function(){
     , maxValue = this.depth / 100
     , sustainLevel = this.sustain / 100
 
+  //console.log(attackTime, holdTime, decayTime, maxValue, sustainLevel)
+
   this.param.cancelScheduledValues(now)
   this.param.setValueAtTime(0, now)
   this.param.linearRampToValueAtTime(maxValue, attackTime)
@@ -36,9 +38,12 @@ EnvelopeGenerator.prototype.trigger = function(){
 
 EnvelopeGenerator.prototype.triggerRelease = function(){
   var now = this.context.currentTime
+  //console.log("release start", this.param, this.param.value)
+  this.param.cancelScheduledValues(0)
   this.param.setValueAtTime(this.param.value, now)
   this.param.linearRampToValueAtTime(0, now + this.release)
   setTimeout(function(){
+    //console.log("release done", this.param.value)
     this.onended()
   }.bind(this), this.release * 1000 + 5)
 }

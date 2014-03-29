@@ -29,7 +29,48 @@ describe("parsing", function(){
     beforeEach(function(){
       this.result = this.subject.parse("// ------------------------------ \
 // Commented text here \
+ \
 // ------------------------------")
+    })
+
+    it("has no regions", function(){
+      expect(this.result.regions).eql([])
+    })
+  })
+
+  context("a string with multiline comments", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse("/* \r\n // ********************************************************************** \r\n */")
+    })
+
+    it("has no regions", function(){
+      expect(this.result.regions).eql([])
+    })
+  })
+
+  context("a string with a single <global> header", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse("<global>")
+    })
+
+    it("has no regions", function(){
+      expect(this.result.regions).eql([])
+    })
+  })
+
+  context("a string with a single <master> header", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse("<master>")
+    })
+
+    it("has no regions", function(){
+      expect(this.result.regions).eql([])
+    })
+  })
+
+  context("a string with a single <control> header", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse("<control>")
     })
 
     it("has no regions", function(){
@@ -53,7 +94,9 @@ describe("parsing", function(){
     })
 
     it("has one region", function(){
-      expect(this.result.regions).eql([{}])
+      expect(this.result.regions).eql([{
+        regionId: "r0"
+      }])
     })
   })
 
@@ -64,6 +107,7 @@ describe("parsing", function(){
 
     it("has one region with the correct sample", function(){
       expect(this.result.regions).eql([{
+        regionId: "r0",
         sample: "trumpet-pp-c4.wav"
       }])
     })
@@ -77,9 +121,22 @@ describe("parsing", function(){
 
     it("has two regions with the correct sample", function(){
       expect(this.result.regions).eql([
-        { sample: "trumpet_pp_c4.wav" },
-        { sample: "trumpet_pp_c#4.wav" }
+        { regionId: "r0", sample: "trumpet_pp_c4.wav" },
+        { regionId: "r1", sample: "trumpet_pp_c#4.wav" }
       ])
+    })
+  })
+
+  context("a string with a <global> with a sample opcde and a single region", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse("<global> sample=trumpet_pp_c4.wav <region> ")
+    })
+
+    it("has one region with the correct sample", function(){
+      expect(this.result.regions).eql([{
+        regionId: "r0",
+        sample: "trumpet_pp_c4.wav"
+      }])
     })
   })
 
@@ -90,6 +147,7 @@ describe("parsing", function(){
 
     it("has one region with the correct sample", function(){
       expect(this.result.regions).eql([{
+        regionId: "r0",
         sample: "trumpet_pp_c4.wav"
       }])
     })
@@ -102,6 +160,7 @@ describe("parsing", function(){
 
     it("has one region with the correct sample", function(){
       expect(this.result.regions).eql([{
+        regionId: "r0",
         sample: "trumpet_pp_c4.wav"
       }])
     })
@@ -116,8 +175,8 @@ describe("parsing", function(){
 
     it("has two regions with the correct sample opcodes", function(){
       expect(this.result.regions).eql([
-        { sample: "trumpet_pp_c4.wav" },
-        { sample: "trumpet_pp_c#4.wav" }
+        { regionId: "r0", sample: "trumpet_pp_c4.wav" },
+        { regionId: "r1", sample: "trumpet_pp_c#4.wav" }
       ])
     })
   })
@@ -131,8 +190,185 @@ describe("parsing", function(){
 
     it("has two regions with the correct sample opcodes", function(){
       expect(this.result.regions).eql([
-        { sample: "trumpet_pp_c4.wav", lokey: 59, hikey: 61 },
-        { sample: "trumpet_pp_d#4.wav", lokey: 62, hikey: 64 }
+        { regionId: "r0", sample: "trumpet_pp_c4.wav", lokey: 59, hikey: 61 },
+        { regionId: "r1", sample: "trumpet_pp_d#4.wav", lokey: 62, hikey: 64 }
+      ])
+    })
+  })
+
+  context("default path (hardcoded to ../)", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse("<control> \
+ hint_ram_based=1 \
+ default_path=../ \
+ set_cc1=0     //Power-on Default Values: Modulation \r\n\
+ set_cc11=127  //Power-on Default Values: Expression \r\n\
+ set_cc64=0    //Power-on Default Values: Sustain Pedal \r\n\
+ \
+<global> \
+ sample=sf2_smpl.wav \
+ \
+<group> \
+ volume=-4 \
+<region> \
+ loop_mode=loop_continuous \r\n\
+ region_label=Grand Piano-D6 \r\n\
+ loop_start=7003344 loop_end=7038489 ")
+    })
+
+    it("works", function(){
+      expect(this.result.regions).eql([{
+        regionId: "r0",
+        loop_end: 7038489,
+        loop_start: 7003344,
+        loop_mode: "loop_continuous",
+        region_label: "Grand Piano-D6 ",
+        sample: "sf2_smpl.wav",
+        volume: -4
+      }])
+    })
+  })
+
+  context("a string with a one groups and two regions", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse(" \
+        <group> <region> sample=trumpet_pp_c4.wav lokey=b3 hikey=c#4 \
+        <region> sample=trumpet_pp_d#4.wav lokey=d4 hikey=e4")
+    })
+
+    it("has two regions with the correct sample opcodes", function(){
+      expect(this.result.regions).eql([
+        { regionId: "r0", sample: "trumpet_pp_c4.wav", lokey: 59, hikey: 61 },
+        { regionId: "r1", sample: "trumpet_pp_d#4.wav", lokey: 62, hikey: 64 }
+      ])
+    })
+  })
+
+  context("a real-life example", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse("/* \
+// ********************************************************************** \
+// Some stuff here \
+// ********************************************************************** \
+// Comments       : ***     License v2.0    *** \
+ \
+** Some more stuff here ** \
+*/ \
+ \
+<control> \
+ hint_ram_based=1 \
+ default_path=../ \
+ set_cc1=0     //Power-on Default Values: Modulation \r\n\
+ set_cc11=127  //Power-on Default Values: Expression \r\n\
+ set_cc64=0    //Power-on Default Values: Sustain Pedal \
+ \
+<global> \
+ sample=sf2_smpl.wav \
+ \
+<master> \
+ lokey=0 hikey=35 \
+ lovel=0 hivel=49 \
+ global_volume=8 \
+ ampeg_attack=1 \
+ fil_type=lpf_2p \
+ cutoff=12.6748 \
+ resonance=0.5 \
+ \
+<group> \
+ volume=-4 \
+ //SFZModUnknown!!! \
+//EG WITHOUT TARGET \
+ \
+ fil_type=lpf_2p \
+ cutoff=1333.09 \
+ resonance=0.5 \
+ \
+<region> \
+ lokey=0 hikey=27 \
+ pan=-68 \
+ volume=-7 \
+ ampeg_sustain=0.001 \
+ ampeg_attack=0.00799973 \
+ ampeg_decay=19.1486 \
+ ampeg_release=3.00008 \
+ loop_mode=loop_continuous \
+ region_label=Grand Piano-D1 \
+ //Sample Rate override main:48000 curr:31000 \
+ pitch_keycenter=26 tune=-756 offset=6967704 end=7038491 \
+ loop_start=7003344 loop_end=7038489 ")
+    })
+
+    it("works", function(){
+      expect(this.result.regions).eql([
+      ])
+    })
+  })
+
+  context("master headers", function(){
+    beforeEach(function(){
+      this.result = this.subject.parse(" \
+<master> \
+ lokey=0 hikey=35 \
+ lovel=0 hivel=49 \
+ global_volume=8 \
+ cutoff=12.6748 \
+ resonance=0.5 \
+ \
+<group> \
+ volume=-4 \
+ cutoff=1333.09 \
+ resonance=0.5 \
+ \
+<region> \
+ lokey=0 hikey=27 \
+ pan=-68 \
+\
+<master> \
+ lokey=0 hikey=35 \
+ lovel=50 hivel=65 \
+ global_volume=6 \
+ cutoff=3.68006 \
+ resonance=0.5 \
+ \
+<group> \
+ volume=-4 \
+ \
+ cutoff=1333.09 \
+ resonance=0.5 \
+ \
+<region> \
+ lokey=0 hikey=27 \
+ pan=-68 \
+ volume=-7 \
+")
+    })
+
+    it("passes values from last master to regions", function(){
+      expect(this.result.regions).eql([
+        {
+          global_volume: 8,
+          lokey: 0,
+          hikey: 27,
+          lovel: 0,
+          hivel: 49,
+          volume: -4,
+          cutoff: 1333.09,
+          resonance: 0.5,
+          pan: -68,
+          regionId: "r0"
+        },
+        {
+          global_volume: 6,
+          lokey: 0,
+          hikey: 27,
+          lovel: 50,
+          hivel: 65,
+          volume: -7,
+          cutoff: 1333.09,
+          resonance: 0.5,
+          pan: -68,
+          regionId: "r1"
+        }
       ])
     })
   })
@@ -419,6 +655,60 @@ describe("parsing", function(){
     _(sequentialIntegerOpcodes).each(function(opcode){
       testIntegerOpcode(opcode + 1)
     })
+
+
+    describe("custom ARIA opcodes", function(){
+
+      testTextOpcode("default_path", ["../"])
+
+      var ariaIntegerOpcodes = [
+        "global_volume",
+        "hint_ram_based",
+        "lfo06_wave",
+        "lfo06_pitch",
+        "lfo06_pitch_oncc129"
+      ]
+
+      var ariaFloatOpcodes = [
+        "lfo06_freq",
+        "global_volume"
+      ]
+
+      var ariaSequentialIntegerOpcodes = [
+        "set_cc",
+        "lfo06_pitch_oncc",
+        "amplitude_oncc",
+        "amplitude_curvecc"
+      ]
+
+      _(ariaIntegerOpcodes).each(function(opcode){
+        testIntegerOpcode(opcode)
+      })
+
+      _(ariaFloatOpcodes).each(function(opcode){
+        testFloatOpcode(opcode)
+      })
+
+      _(ariaSequentialIntegerOpcodes).each(function(opcode){
+        testIntegerOpcode(opcode + 1)
+        testIntegerOpcode(opcode + 127)
+      })
+
+      _(128).times(function(i){
+        var opcode = "" + i
+        if (opcode.length == 1){
+          opcode = "00" + opcode
+        } else if (opcode.length == 2) {
+          opcode = "0" + opcode
+        } else if (opcode.length == 0) {
+          opcode = "000"
+        }
+
+        testFloatOpcode("v" + opcode)
+      })
+
+    })
+
 
   })
 })

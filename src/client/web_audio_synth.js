@@ -5,7 +5,7 @@ var BufferLoader = require("./buffer_loader")
 var player = function(instrument, audioContext){
   this.context = audioContext
   window.context = this.context
-  var sampleUrls = instrument.samples()
+  var sampleUrls = _(instrument.samples()).uniq()
   this.loadBuffers(sampleUrls)
   this.voicesToRelease = {}
   this.activeVoices = window.voices = {}

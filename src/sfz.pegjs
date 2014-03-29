@@ -17,19 +17,39 @@ Instrument
       }
 
       elements = elements !== null ? elements : [];
+      var global = null;
+      var masters = [];
+      var control = null;
       var groups = [];
       var regions = [];
+      var curves = [];
       var lastNode = null
       for (var i = 0; i < elements.length; i++) {
-        if (elements[i] == '<group>') {
+        if (elements[i] == '<global>') {
+          lastNode = global = {}
+        } else if (elements[i] == '<master>') {
+          lastNode = master = {}
+          masters.push(lastNode)
+        } else if (elements[i] == '<group>') {
           lastNode = group = {}
           groups.push(lastNode)
         } else if (elements[i] == "<region>") {
           lastNode = {}
+          if (global) extend(lastNode, global)
+          if (masters.length) {
+            extend(lastNode, masters[masters.length - 1])
+          }
           if (groups.length) {
             extend(lastNode, groups[groups.length - 1])
           }
+          lastNode.regionId = "r" + regions.length
           regions.push(lastNode)
+        } else if (elements[i] == "<control>") {
+          lastNode = {}
+          control = lastNode
+        } else if (elements[i] == "<curve>") {
+          lastNode = {}
+          curves.push(lastNode)
         } else {
           var param = elements[i]
             , name = param[0]
@@ -42,7 +62,8 @@ Instrument
       }
       return {
         type: "Instrument",
-        regions: regions
+        regions: regions,
+        control: control
       };
     }
 
@@ -64,7 +85,13 @@ SourceCharacter
   = .
 
 Header
- = Region / Group
+ = Global / Master / Region / Group / AriaCustomHeader
+
+Global
+ = "<global>"
+
+Master
+ = "<master>"
 
 Region
  = "<region>"
@@ -97,6 +124,9 @@ OpcodeDirective
   / CurveOpcodeDirective
   / SequentialFloatDirective
   / SequentialIntegerDirective
+  / AriaDefaultPathOpcode
+  / AriaCustomTextOpcode
+  / AriaCurveOpcode
 
 MidiNoteOpcodeDirective
   = name:MidiNoteOpcode "=" value:MidiNoteValue {
@@ -131,7 +161,7 @@ CurveOpcode
   / "xf_velcurve"
   / "xf_cccurve"
 
-MidiNoteOpcode
+MidiNoteOpcode "midi note opcode"
   = "lokey"
   / "hikey"
   / "pitch_keycenter"
@@ -142,7 +172,7 @@ MidiNoteOpcode
   / "sw_up"
   / "sw_previous"
 
-FloatOpcode
+FloatOpcode "float opcode"
   = "fillfo_delay"
   / "fillfo_fade"
   / "fillfo_freq"
@@ -240,8 +270,9 @@ FloatOpcode
   / "eq3_vel2gain"
   / "effect1"
   / "effect2"
+  / AriaCustomFloatOpcode
 
-IntegerOpcode
+IntegerOpcode "integer opcode"
   = "fillfo_depthcc1"
   / "fillfo_depthcc60"
   / "fillfo_freqchanaft"
@@ -304,7 +335,7 @@ IntegerOpcode
   / "xfin_hivel"
   / "xfout_lovel"
   / "xfout_hivel"
-
+  / AriaCustomIntegerOpcode
 
 SequentialFloatDirective
  = name:(n:SequentialFloatOpcode i:Integer { return n + i }) "=" value:Float {
@@ -320,7 +351,7 @@ SequentialIntegerDirective
     return param
   }
 
-SequentialFloatOpcode
+SequentialFloatOpcode "sequential float opcode"
   = "fillfo_freqcc"
   / "gain_cc"
   / "ampeg_delaycc"
@@ -350,6 +381,7 @@ SequentialIntegerOpcode
   / "xfin_hicc"
   / "xfout_locc"
   / "xfout_hicc"
+  / AriaCustomSequentialIntegerOpcode
 
 DelayCcDirective
   = name:(n:"delay_cc" i:Integer { return n + i }) "=" value:Float {
@@ -479,17 +511,18 @@ Filename
    return chars.join("")
  }
 
+Path
+ = "../"
+
 FileExtension
   = ".wav" / ".ogg" / ".mp3"
 
 /* ===== A.1 Lexical Grammar ===== */
 
+
 WhiteSpace "whitespace"
   = [\t\v\f \u00A0\uFEFF]
   / Zs
-
-// Separator, Space
-Zs = [\u0020\u00A0\u1680\u180E\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000]
 
 LineTerminator
   = [\n\r\u2028\u2029]
@@ -502,17 +535,31 @@ LineTerminatorSequence "end of line"
   / "\u2029" // paragraph separator
 
 Comment "comment"
-  = SingleLineComment
+  = MultiLineComment
+  / SingleLineComment
+
+MultiLineComment
+  = "/*" (!"*/" SourceCharacter)* "*/"
+
+MultiLineCommentNoLineTerminator
+  = "/*" (!("*/" / LineTerminator) SourceCharacter)* "*/"
 
 SingleLineComment
-  = "/" (!LineTerminator SourceCharacter)*
+  = "//" (!LineTerminator SourceCharacter)*
+
+// Separator, Space
+Zs = [\u0020\u00A0\u1680\u180E\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u202F\u205F\u3000]
 
 EOS
-  = _ LineTerminatorSequence
+  = __ ";"
+  / _ LineTerminatorSequence
+  / _ &"}"
   / __ EOF
 
 EOSNoLineTerminator
-  = _ LineTerminatorSequence
+  = _ ";"
+  / _ LineTerminatorSequence
+  / _ &"}"
   / _ EOF
 
 EOF
@@ -521,7 +568,51 @@ EOF
 /* Whitespace */
 
 _
-  = (WhiteSpace / SingleLineComment)*
+  = (WhiteSpace / MultiLineCommentNoLineTerminator / SingleLineComment)*
 
 __
   = (WhiteSpace / LineTerminatorSequence / Comment)*
+
+// Custom Aria opcodes
+
+AriaCustomHeader
+ = "<control>"
+ / "<curve>"
+
+AriaCustomIntegerOpcode
+  = "hint_ram_based"
+  / "global_volume"
+  / "lfo06_freq"
+  / "lfo06_pitch"
+  / "lfo06_wave"
+  / "lfo06_pitch_oncc129"
+
+AriaCustomFloatOpcode
+  = "lfo06_freq"
+  / "global_volume"
+
+AriaCustomSequentialIntegerOpcode
+  = "set_cc"
+  / "lfo06_pitch_oncc"
+  / "amplitude_oncc"
+  / "amplitude_curvecc"
+
+AriaCustomTextOpcode
+  = "region_label=" value:Label { return { region_label: value } }
+
+AriaDefaultPathOpcode
+  = "default_path=" value:Path { return { default_path: value } }
+
+Label
+ = chars:(!LineTerminatorSequence c:SourceCharacter { return c })+ {
+   return chars.join("")
+ }
+
+AriaCurveOpcode
+  = "v" digits:DecimalDigits "=" value:Float {
+    var param = {}
+    var name = "v" + digits.join("")
+    param[name] = value
+    return param
+  }
+
