@@ -63,13 +63,22 @@ model.prototype.noteOn = function(channel, pitch, velocity){
     velocity: velocity
   }
 
-  _(this.regionsToPlay(noteOn, rand)).each(function(region){
-    this.play(region, noteOn)
-  }.bind(this))
+  if (noteOn.velocity > 0) {
+    var regions = this.regionsToPlay(noteOn, rand)
+    _(regions).each(function(region){
+      this.play(region, noteOn)
+    }.bind(this))
+  } else {
+    this.stop(noteOn.pitch)
+  }
 }
 
 model.prototype.play = function(region, noteOn){
   this.synth.play(region, noteOn)
+}
+
+model.prototype.stop = function(pitch){
+  this.synth.stop(pitch)
 }
 
 model.prototype.samples = function(){

@@ -1,44 +1,74 @@
 var midiSelect = new MIDISelect()
 var ac = new webkitAudioContext()
 
-var sfzUrl = "/example/piano.mp3.sfz"
-var sfzUrl = "/example/Woodwinds - Oboe Solo.sfz"
-var sfzUrl = "/example/trumpet.sfz"
-var sfzUrl = "/example/horn-solo.mp3.sfz"
-var sfzUrl = "/Samples/gen_user_wav/000/000_Stereo_Grand.sfz"
-
 var keyCodes = [65, 83, 68, 70, 71, 72, 74, 75]
 
-sfz.load(ac, sfzUrl, function(instrument){
-  window.instrument = instrument
-  //console.log(instrument)
+var sfzUrl = "/Samples/gen_user_wav/000/000_Stereo_Grand.sfz"
 
-  midiSelect.on("noteOn", function(e){
-    instrument.noteOn(e.detail.channel, e.detail.pitch, e.detail.velocity)
+var loadPreset = function(url){
+  sfz.load(ac, url, function(instrument){
+    window.instrument = instrument
+    console.log("instrument loaded")
+    //var regions = window.regions = instrument.regions
+    //var noteOn = { pitch: 60, velocity: 100, channel: 0 }
+
+    //var regionsToPlay = window.regs = instrument.regionsToPlay(noteOn, 1)
+    //console.log
+    //_(regs).each(function(region){
+      //console.log(region.regionId, region.region_label, region.lokey, region.hikey, region.lovel, region.hivel)
+    //})
+
+  })
+}
+
+$(document).on("ready", function(){
+  var $select = $("select");
+
+  _(window.presets).each(function(presetUrls, group){
+    $optgroup = $("<optgroup label='" + group + "'></optgroup>")
+    _(presetUrls).each(function(url){
+      var option = "<option value='" + url + "'>"
+      var parts = url.split("/")
+      option += parts[parts.length - 1]
+      option += "</option>"
+      $optgroup.append(option)
+    })
+    $select.append($optgroup)
   })
 
-  midiSelect.on("controlChange", function(e){
-    console.log(e.detail)
+  $select.on("change", function(e){
+    console.log(e.currentTarget.value)
+    loadPreset(e.currentTarget.value)
   })
 
-  midiSelect.on("pitchBend", function(e){
-    instrument.pitchBend(e.detail.channel, e.detail.bend)
-  })
+    midiSelect.on("noteOn", function(e){
+      if (!window.instrument) return;
+      window.instrument.noteOn(e.detail.channel, e.detail.pitch, e.detail.velocity)
+    })
 
-  var makeNoteOn = function(keyCode){
-  }
+    midiSelect.on("controlChange", function(e){
+      if (!window.instrument) return;
+      console.log(e.detail)
+    })
 
-  document.addEventListener("keydown", function(e){
-    var pitch = keyCodes.indexOf(e.keyCode)
-    if (pitch != -1) {
-      instrument.noteOn(1, 60 + pitch, 100)
-    }
-  })
+    midiSelect.on("pitchBend", function(e){
+      if (!window.instrument) return;
+      window.instrument.pitchBend(e.detail.channel, e.detail.bend)
+    })
 
-  document.addEventListener("keyup", function(e){
-    var pitch = keyCodes.indexOf(e.keyCode)
-    if (pitch != -1) {
-      instrument.noteOn(1, 60 + pitch, 0)
-    }
-  })
+    document.addEventListener("keydown", function(e){
+      if (!window.instrument) return;
+      var pitch = keyCodes.indexOf(e.keyCode)
+      if (pitch != -1) {
+        window.instrument.noteOn(1, 60 + pitch, 100)
+      }
+    })
+
+    document.addEventListener("keyup", function(e){
+      if (!window.instrument) return;
+      var pitch = keyCodes.indexOf(e.keyCode)
+      if (pitch != -1) {
+        window.instrument.noteOn(1, 60 + pitch, 0)
+      }
+    })
 })

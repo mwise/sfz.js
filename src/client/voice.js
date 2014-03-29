@@ -15,8 +15,6 @@ var model = function(buffer, region, noteOn, audioContext, bend){
 
   this.output = audioContext.createGainNode()
 
-  console.log(region.regionId, "vel:" + noteOn.velocity, "lovel:" + region.lovel, "hivel:" + region.hivel, "lokey:"+region.lokey, "hikey:"+region.hikey)
-
   this.setupSource(buffer, region, noteOn, bend)
   this.setupFilter(region, noteOn)
   this.setupAmp(region, noteOn)
@@ -173,7 +171,7 @@ model.prototype.start = function(){
     self.destroy()
   }
   this.amp.trigger(onended)
-  this.filter.trigger()
+  if (this.filter) this.filter.trigger()
   if (this.offset && this.duration) {
     this.source.start(0, this.offset, this.duration)
   } else {

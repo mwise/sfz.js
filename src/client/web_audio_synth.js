@@ -4,7 +4,6 @@ var BufferLoader = require("./buffer_loader")
 
 var player = function(instrument, audioContext){
   this.context = audioContext
-  window.context = this.context
   var sampleUrls = _(instrument.samples()).uniq()
   this.loadBuffers(sampleUrls)
   this.voicesToRelease = {}
@@ -20,6 +19,7 @@ player.prototype.loadBuffers = function(urls){
 }
 
 player.prototype.onBuffersLoaded = function(buffers){
+  console.log("audio buffer loaded")
   var self = this
   this.buffers = {}
 
@@ -31,25 +31,33 @@ player.prototype.onBuffersLoaded = function(buffers){
 player.prototype.play = function(region, noteOn){
   var buffer = this.buffers[region.sample]
   var self = this
+  var voicesToRelease = this.voicesToRelease
+  voicesToRelease[noteOn.pitch] = voicesToRelease[noteOn.pitch] || []
 
-  if (noteOn.velocity != 0) {
-    var voice = new Voice(buffer, region, noteOn, this.context, this.bend)
-    self.activeVoices[voice.voiceId] = voice
-    voice.onended = function(){
-      delete self.activeVoices[voice.voiceId]
-    }
-    if (region.trigger == "attack") {
-      this.voicesToRelease[noteOn.pitch] = voice
-    }
-    voice.connect(this.context.destination)
-    voice.start()
-  } else {
-    var voice = this.voicesToRelease[noteOn.pitch]
-    if (voice) {
-      voice.stop()
-      delete this.voicesToRelease[noteOn.pitch]
-    }
+  var voice = new Voice(buffer, region, noteOn, this.context, this.bend)
+  self.activeVoices[voice.voiceId] = voice
+  voice.onended = function(){
+    delete self.activeVoices[voice.voiceId]
   }
+  if (region.trigger == "attack") {
+    voicesToRelease[noteOn.pitch].push(voice)
+  }
+  voice.connect(this.context.destination)
+  voice.start()
+}
+
+player.prototype.stop = function(pitch){
+  var self = this
+  var voicesToRelease = this.voicesToRelease
+  voicesToRelease[pitch] = voicesToRelease[pitch] || []
+
+  _(voicesToRelease[pitch]).each(function(voice){
+    voice.stop()
+  })
+  voicesToRelease[pitch] = []
+  //var voiceToRelase = voicesToRelease[noteOn.pitch][region.regionId]
+  //if (voiceToRelase) voiceToRelase.stop()
+  //voicesToRelease[noteOn.pitch][region.regionId] = null
 }
 
 player.prototype.pitchBend = function(channel, bend){

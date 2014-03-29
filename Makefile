@@ -17,4 +17,7 @@ test_client: browserify
 test_client_ci: browserify
 	@./node_modules/karma/bin/karma start --no-single-run
 
+generate_parser:
+	@npm run-script generate_parser
+
 .PHONY: test

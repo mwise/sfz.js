@@ -19,7 +19,7 @@ Instrument
       elements = elements !== null ? elements : [];
       var global = null;
       var masters = [];
-      var control = null;
+      var controls = [];
       var groups = [];
       var regions = [];
       var curves = [];
@@ -28,25 +28,29 @@ Instrument
         if (elements[i] == '<global>') {
           lastNode = global = {}
         } else if (elements[i] == '<master>') {
-          lastNode = master = {}
+          lastNode = { masterId: "master" + masters.length }
           masters.push(lastNode)
         } else if (elements[i] == '<group>') {
-          lastNode = group = {}
+          lastNode = {}
           groups.push(lastNode)
+        } else if (elements[i] == '<control>') {
+          lastNode = {}
+          controls.push(lastNode)
         } else if (elements[i] == "<region>") {
           lastNode = {}
           if (global) extend(lastNode, global)
           if (masters.length) {
+            lastNode.master = masters[masters.length - 1]
             extend(lastNode, masters[masters.length - 1])
           }
           if (groups.length) {
             extend(lastNode, groups[groups.length - 1])
           }
+          if (controls.length) {
+            extend(lastNode, controls[controls.length - 1])
+          }
           lastNode.regionId = "r" + regions.length
           regions.push(lastNode)
-        } else if (elements[i] == "<control>") {
-          lastNode = {}
-          control = lastNode
         } else if (elements[i] == "<curve>") {
           lastNode = {}
           curves.push(lastNode)
@@ -60,10 +64,84 @@ Instrument
           }
         }
       }
+
+      for (var i = 0; i < curves.length; i++) {
+        var curve = curves[i]
+        var newCurve = {}
+        for (var key in curve) {
+          if (curve.hasOwnProperty(key)) {
+            var v = key.replace("v", "")
+            newCurve[parseInt(v, 10)] = curve[key]
+          }
+        }
+        curves[i] = newCurve
+      }
+
+      for (var i = 0; i < regions.length; i++) {
+        var region = regions[i]
+        if (region.default_path && region.sample) {
+          region.sample = region.default_path + region.sample
+          delete region.default_path
+        }
+
+        var noteOffset = 0
+        if (region.octave_offset) {
+          noteOffset += region.octave_offset * 12
+          delete region.octave_offset
+        }
+
+        if (region.note_offset) {
+          noteOffset += region.note_offset
+          delete region.note_offset
+        }
+
+        if (noteOffset) {
+          if (region.lokey) region.lokey += noteOffset
+          if (region.hikey) region.hikey += noteOffset
+          if (region.pitch_keycenter) region.pitch_keycenter += noteOffset
+          if (region.sw_lokey) region.sw_lokey += noteOffset
+          if (region.sw_hikey) region.sw_hikey += noteOffset
+          if (region.sw_last) region.sw_last += noteOffset
+          if (region.sw_down) region.sw_down += noteOffset
+          if (region.sw_up) region.sw_up += noteOffset
+          if (region.sw_previous) region.sw_previous += noteOffset
+        }
+
+        if (region.master) {
+          if (region.lokey && region.master.lokey) {
+            if (region.lokey < region.master.lokey) {
+              region.lokey = region.master.lokey
+            }
+          }
+
+          if (region.hikey && region.master.hikey) {
+            if (region.hikey > region.master.hikey) {
+              region.hikey = region.master.hikey
+            }
+          }
+
+          if (region.lovel && region.master.lovel) {
+            if (region.lovel < region.master.lovel) {
+              region.lovel = region.master.lovel
+            }
+          }
+
+          if (region.hivel && region.master.hivel) {
+            if (region.hivel > region.master.hivel) {
+              region.hivel = region.master.hivel
+            }
+          }
+
+          delete region.master
+        }
+        if (region.masterId) delete region.masterId
+      }
+
       return {
         type: "Instrument",
+        masters: masters,
         regions: regions,
-        control: control
+        curves: curves
       };
     }
 
@@ -84,8 +162,8 @@ SourceElement
 SourceCharacter
   = .
 
-Header
- = Global / Master / Region / Group / AriaCustomHeader
+Header "header"
+ = Global / Master / Region / Group / Curve / AriaCustomHeader
 
 Global
  = "<global>"
@@ -99,7 +177,10 @@ Region
 Group
  = "<group>"
 
-OpcodeDirective
+Curve
+ = "<curve>"
+
+OpcodeDirective "opcode directive"
   = "sample=" value:Filepath { return { sample: value } }
   / "key=" value:MidiNoteValue {
     return { lokey: value, hikey: value, pitch_keycenter: value }
@@ -127,6 +208,8 @@ OpcodeDirective
   / AriaDefaultPathOpcode
   / AriaCustomTextOpcode
   / AriaCurveOpcode
+  / FlexEgOpcode
+  / LfoOpcode
 
 MidiNoteOpcodeDirective
   = name:MidiNoteOpcode "=" value:MidiNoteValue {
@@ -171,6 +254,8 @@ MidiNoteOpcode "midi note opcode"
   / "sw_down"
   / "sw_up"
   / "sw_previous"
+  / "octave_offset"
+  / "note_offset"
 
 FloatOpcode "float opcode"
   = "fillfo_delay"
@@ -180,6 +265,8 @@ FloatOpcode "float opcode"
   / "fillfo_freqcc2"
   / "lorand"
   / "hirand"
+  / "lotimer"
+  / "hitimer"
   / "lobpm"
   / "hibpm"
   / "delay_random"
@@ -288,6 +375,8 @@ IntegerOpcode "integer opcode"
   / "hichanaft"
   / "lochan"
   / "hichan"
+  / "loprog"
+  / "hiprog"
   / "lopolyaft"
   / "hipolyaft"
   / "seq_length"
@@ -616,3 +705,124 @@ AriaCurveOpcode
     return param
   }
 
+FlexEgOpcode
+  = FlexEgCutoff
+  / FlexEgSustain
+  / FlexEgPitch
+  / FlexEgTime
+  / FlexEgLevel
+  / FlexEgShape
+
+FlexEgCutoff
+  = "eg" digits:DecimalDigits "_cutoff=" value:Float {
+    var param = {}
+    var name = "eg" + digits.join("")
+    param[name] = value
+    return param
+  }
+
+FlexEgSustain
+  = "eg" digits:DecimalDigits "_sustain=" value:Float {
+    var param = {}
+    var name = "eg" + digits.join("")
+    param[name] = value
+    return param
+  }
+
+FlexEgPitch
+  = "eg" digits:DecimalDigits "_pitch=" value:Float {
+    var param = {}
+    var name = "eg" + digits.join("")
+    param[name] = value
+    return param
+  }
+
+
+FlexEgTime
+  = "eg" digits:DecimalDigits "_time" node:Integer "=" value:Float {
+    var param = {}
+    var name = "eg" + digits.join("") + "_time" + node
+    param[name] = value
+    return param
+  }
+
+FlexEgLevel
+  = "eg" digits:DecimalDigits "_level" node:Integer "=" value:Float {
+    var param = {}
+    var name = "eg" + digits.join("") + "_level" + node
+    param[name] = value
+    return param
+  }
+
+FlexEgShape
+  = "eg" digits:DecimalDigits "_shape" node:Integer "=" value:Integer {
+    var param = {}
+    var name = "eg" + digits.join("") + "_shape" + node
+    param[name] = value
+    return param
+  }
+
+LfoOpcode
+  = LfoWave
+  / LfoFreq
+  / LfoPitch
+  / LfoDelay
+  / LfoAmplitude
+  / LfoCutoff
+  / LfoPhase
+
+LfoWave
+  = "lfo" digits:DecimalDigits "_wave=" value:Integer {
+    var param = {}
+    var name = "lfo" + digits.join("") + "_wave"
+    param[name] = value
+    return param
+  }
+
+LfoFreq
+  = "lfo" digits:DecimalDigits "_freq=" value:Float {
+    var param = {}
+    var name = "lfo" + digits.join("") + "_freq"
+    param[name] = value
+    return param
+  }
+
+LfoPitch
+  = "lfo" digits:DecimalDigits "_pitch=" value:Integer {
+    var param = {}
+    var name = "lfo" + digits.join("") + "_pitch"
+    param[name] = value
+    return param
+  }
+
+LfoDelay
+  = "lfo" digits:DecimalDigits "_delay=" value:Float {
+    var param = {}
+    var name = "lfo" + digits.join("") + "_delay"
+    param[name] = value
+    return param
+  }
+
+LfoAmplitude
+  = "lfo" digits:DecimalDigits "_amplitude=" value:Float {
+    var param = {}
+    var name = "lfo" + digits.join("") + "_amplitude"
+    param[name] = value
+    return param
+  }
+
+LfoCutoff
+  = "lfo" digits:DecimalDigits "_cutoff=" value:Float {
+    var param = {}
+    var name = "lfo" + digits.join("") + "_cutoff"
+    param[name] = value
+    return param
+  }
+
+LfoPhase
+  = "lfo" digits:DecimalDigits "_phase=" value:Float {
+    var param = {}
+    var name = "lfo" + digits.join("") + "_phase"
+    param[name] = value
+    return param
+  }

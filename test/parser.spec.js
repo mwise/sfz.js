@@ -48,7 +48,7 @@ describe("parsing", function(){
     })
   })
 
-  context("a string with a single <global> header", function(){
+  context("a string with a <global> header", function(){
     beforeEach(function(){
       this.result = this.subject.parse("<global>")
     })
@@ -68,9 +68,95 @@ describe("parsing", function(){
     })
   })
 
-  context("a string with a single <control> header", function(){
+  describe("<control> headers", function(){
+    context("a string with a single <control> header", function(){
+      beforeEach(function(){
+        this.result = this.subject.parse("<control>")
+      })
+
+      it("has no regions", function(){
+        expect(this.result.regions).eql([])
+      })
+    })
+
+    context("two <control> headers and two regions", function(){
+      beforeEach(function(){
+        this.result = this.subject.parse(" \
+          <control> sample=trumpet_pp_c4.wav <region>  \
+          <control> <region> sample=trumpet_pp_c#4.wav ")
+      })
+
+      it("has two regions with the correct sample opcodes", function(){
+        expect(this.result.regions).eql([
+          { regionId: "r0", sample: "trumpet_pp_c4.wav" },
+          { regionId: "r1", sample: "trumpet_pp_c#4.wav" }
+        ])
+      })
+    })
+
+    describe("opcodes", function(){
+      describe("octave_offset", function(){
+        beforeEach(function(){
+          this.octave_offset = 3
+          this.result = this.subject.parse(" \
+            <control> octave_offset=" + this.octave_offset + " \
+            <region> lokey=10 hikey=20 pitch_keycenter=10 sw_lokey=10 sw_hikey=20 \
+                      sw_last=10 sw_down=10 sw_up=20 sw_previous=20")
+
+        })
+
+        it("applies the octave offset to all MIDI note opcodes", function(){
+          noteOffset = this.octave_offset * 12
+          expect(this.result.regions).eql([
+            {
+              regionId: "r0",
+              lokey: 10 + noteOffset,
+              hikey: 20 + noteOffset,
+              pitch_keycenter: 10 + noteOffset,
+              sw_lokey: 10 + noteOffset,
+              sw_hikey: 20 + noteOffset,
+              sw_last: 10 + noteOffset,
+              sw_down: 10 + noteOffset,
+              sw_up: 20 + noteOffset,
+              sw_previous: 20 + noteOffset
+            }
+          ])
+        })
+      })
+
+      describe("note_offset", function(){
+        beforeEach(function(){
+          this.noteOffset = 3
+          this.result = this.subject.parse(" \
+            <control> note_offset=" + this.noteOffset + " \
+            <region> lokey=10 hikey=20 pitch_keycenter=10 sw_lokey=10 sw_hikey=20 \
+                      sw_last=10 sw_down=10 sw_up=20 sw_previous=20")
+
+        })
+
+        it("applies the octave offset to all MIDI note opcodes", function(){
+          expect(this.result.regions).eql([
+            {
+              regionId: "r0",
+              lokey: 10 + this.noteOffset,
+              hikey: 20 + this.noteOffset,
+              pitch_keycenter: 10 + this.noteOffset,
+              sw_lokey: 10 + this.noteOffset,
+              sw_hikey: 20 + this.noteOffset,
+              sw_last: 10 + this.noteOffset,
+              sw_down: 10 + this.noteOffset,
+              sw_up: 20 + this.noteOffset,
+              sw_previous: 20 + this.noteOffset
+            }
+          ])
+        })
+      })
+    })
+  })
+
+  context("a string with a single <group> header", function(){
     beforeEach(function(){
-      this.result = this.subject.parse("<control>")
+      this.result = this.subject.parse("<group>")
     })
 
     it("has no regions", function(){
@@ -78,13 +164,18 @@ describe("parsing", function(){
     })
   })
 
-  context("a string with a single group", function(){
+  describe("<curve> headers", function(){
     beforeEach(function(){
-      this.result = this.subject.parse("<group>")
+      this.result = this.subject.parse("<curve> \
+                                      v000=0 v001=6.20001e-05 v127=1")
     })
 
-    it("has no regions", function(){
-      expect(this.result.regions).eql([])
+    it("defines a single curve", function(){
+      expect(this.result.curves).eql([{
+        0: 0,
+        1: parseFloat("6.20001e-05"),
+        127: 1
+      }])
     })
   })
 
@@ -216,15 +307,19 @@ describe("parsing", function(){
  loop_start=7003344 loop_end=7038489 ")
     })
 
-    it("works", function(){
+    it("prepends default path to sample opcode values", function(){
       expect(this.result.regions).eql([{
         regionId: "r0",
+        hint_ram_based: 1,
         loop_end: 7038489,
         loop_start: 7003344,
         loop_mode: "loop_continuous",
         region_label: "Grand Piano-D6 ",
-        sample: "sf2_smpl.wav",
-        volume: -4
+        sample: "../sf2_smpl.wav",
+        volume: -4,
+        set_cc1: 0,
+        set_cc11: 127,
+        set_cc64: 0
       }])
     })
   })
@@ -456,6 +551,8 @@ describe("parsing", function(){
       "fillfo_freq",
       "lorand",
       "hirand",
+      "lotimer",
+      "hitimer",
       "lobpm",
       "hibpm",
       "delay",
@@ -565,6 +662,8 @@ describe("parsing", function(){
       "hichanaft",
       "lopolyaft",
       "hipolyaft",
+      "loprog",
+      "hiprog",
       "seq_length",
       "seq_position",
       "group",
@@ -709,6 +808,60 @@ describe("parsing", function(){
 
     })
 
+    describe("flex envelope generators", function(){
 
+      context("when flex eg directives are prsent", function(){
+        beforeEach(function(){
+          this.result = this.subject.parse(" \
+eg06_pitch=4000 \
+eg06_cutoff=-3600 \
+eg06_sustain=4 \
+eg06_time0=0.001 \
+eg06_level0=0 \
+eg06_shape0=0 \
+eg06_time1=0.001 \
+eg06_level1=1 \
+eg06_shape1=0 \
+eg06_time2=0.001 \
+eg06_level2=1 \
+eg06_shape2=0 \
+eg06_time3=0.001 \
+eg06_level3=1 \
+eg06_shape3=0 \
+eg06_time4=0.001 \
+eg06_level4=1 \
+eg06_shape4=0 \
+eg06_time5=0.001 \
+eg06_level5=0 \
+eg06_shape5=0 ")
+        })
+
+        it("doesn't blow up", function(){
+          expect(this.result.regions).eql([])
+        })
+      })
+    })
+
+    describe("lfo directives", function(){
+
+      context("when lfo directives are present", function(){
+        beforeEach(function(){
+          this.result = this.subject.parse(" \
+lfo07_wave=0 \
+lfo07_freq=5.12681 \
+lfo07_delay=0.00681 \
+lfo06_wave=0 \
+lfo06_pitch=0 \
+lfo06_amplitude=99.55 \
+lfo06_cutoff=-26 \
+lfo06_phase=0 \
+lfo06_freq=5.12681 ")
+        })
+
+        it("doesn't blow up", function(){
+          expect(this.result.regions).eql([])
+        })
+      })
+    })
   })
 })
