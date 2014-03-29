@@ -9,7 +9,7 @@ test_node:
 	@./node_modules/.bin/mocha --reporter dot
 
 test_node_ci:
-	@./node_modules/.bin/mocha --reporter dot --watch
+	@nodemon ./node_modules/.bin/mocha --reporter dot
 
 test_client: browserify
 	@./node_modules/karma/bin/karma start --single-run
