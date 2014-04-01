@@ -49,6 +49,19 @@ module.exports = (function() {
                 return target;
               }
 
+              function defaults(target, source){
+                target = target || {};
+                for (var prop in source) {
+                  if (target[prop]) continue;
+                  if (typeof source[prop] === 'object') {
+                    target[prop] = defaults(target[prop], source[prop]);
+                  } else {
+                    target[prop] = source[prop];
+                  }
+                }
+                return target;
+              }
+
               elements = elements !== null ? elements : [];
               var global = null;
               var masters = [];
@@ -56,32 +69,24 @@ module.exports = (function() {
               var groups = [];
               var regions = [];
               var curves = [];
-              var lastNode = null
+              var lastMaster = null
+                , lastControl = null
+                , lastGroup = null
+                , lastNode = null
               for (var i = 0; i < elements.length; i++) {
                 if (elements[i] == '<global>') {
                   lastNode = global = {}
                 } else if (elements[i] == '<master>') {
-                  lastNode = { masterId: "master" + masters.length }
-                  masters.push(lastNode)
+                  lastNode = lastMaster = { masterId: "master" + masters.length }
                 } else if (elements[i] == '<group>') {
-                  lastNode = {}
-                  groups.push(lastNode)
+                  lastNode = lastGroup = {}
                 } else if (elements[i] == '<control>') {
-                  lastNode = {}
-                  controls.push(lastNode)
+                  lastNode = lastControl = {}
                 } else if (elements[i] == "<region>") {
                   lastNode = {}
-                  if (global) extend(lastNode, global)
-                  if (masters.length) {
-                    lastNode.master = masters[masters.length - 1]
-                    extend(lastNode, masters[masters.length - 1])
-                  }
-                  if (groups.length) {
-                    extend(lastNode, groups[groups.length - 1])
-                  }
-                  if (controls.length) {
-                    extend(lastNode, controls[controls.length - 1])
-                  }
+                  lastNode.master = lastMaster
+                  lastNode.groupNode = lastGroup
+                  lastNode.control = lastControl
                   lastNode.regionId = "r" + regions.length
                   regions.push(lastNode)
                 } else if (elements[i] == "<curve>") {
@@ -110,8 +115,31 @@ module.exports = (function() {
                 curves[i] = newCurve
               }
 
+              var isEmpty = function(obj) {
+                if (obj == null) return true;
+                for (var key in obj) if (obj.hasOwnProperty(key)) return false;
+                return true;
+              };
+
+              var regionz = []
               for (var i = 0; i < regions.length; i++) {
                 var region = regions[i]
+                  , regionCopy = {}
+
+                extend(regionCopy, region)
+                delete regionCopy.master
+                delete regionCopy.groupNode
+                delete regionCopy.control
+                delete regionCopy.regionId
+
+                if (isEmpty(regionCopy)) {
+                  continue;
+                }
+
+                if (global) defaults(region, global)
+                if (region.control) defaults(region, region.control)
+                if (region.groupNode) defaults(region, region.groupNode)
+
                 if (region.default_path && region.sample) {
                   region.sample = region.default_path + region.sample
                   delete region.default_path
@@ -141,6 +169,7 @@ module.exports = (function() {
                 }
 
                 if (region.master) {
+                  defaults(region, region.master)
                   if (region.lokey && region.master.lokey) {
                     if (region.lokey < region.master.lokey) {
                       region.lokey = region.master.lokey
@@ -164,16 +193,18 @@ module.exports = (function() {
                       region.hivel = region.master.hivel
                     }
                   }
-
-                  delete region.master
                 }
+                delete region.master
+                delete region.groupNode
+                delete region.control
                 if (region.masterId) delete region.masterId
+                regionz.push(region)
               }
 
               return {
                 type: "Instrument",
                 masters: masters,
-                regions: regions,
+                regions: regionz,
                 curves: curves
               };
             },

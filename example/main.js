@@ -3,7 +3,7 @@ var ac = new webkitAudioContext()
 
 var keyCodes = [65, 83, 68, 70, 71, 72, 74, 75]
 
-var sfzUrl = "/Samples/gen_user_wav/000/000_Stereo_Grand.sfz"
+var sfzUrl = "/Samples/gen_user_wav/000/109_Bagpipes.sfz"
 
 var loadPreset = function(url){
   sfz.load(ac, url, function(instrument){
@@ -20,6 +20,8 @@ var loadPreset = function(url){
 
   })
 }
+
+loadPreset(sfzUrl)
 
 $(document).on("ready", function(){
   var $select = $("select");

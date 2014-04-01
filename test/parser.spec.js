@@ -82,13 +82,13 @@ describe("parsing", function(){
     context("two <control> headers and two regions", function(){
       beforeEach(function(){
         this.result = this.subject.parse(" \
-          <control> sample=trumpet_pp_c4.wav <region>  \
+          <control> sample=trumpet_pp_c4.wav <region> lokey=60  \
           <control> <region> sample=trumpet_pp_c#4.wav ")
       })
 
       it("has two regions with the correct sample opcodes", function(){
         expect(this.result.regions).eql([
-          { regionId: "r0", sample: "trumpet_pp_c4.wav" },
+          { regionId: "r0", sample: "trumpet_pp_c4.wav", lokey: 60 },
           { regionId: "r1", sample: "trumpet_pp_c#4.wav" }
         ])
       })
@@ -181,24 +181,26 @@ describe("parsing", function(){
 
   context("a string with a single region", function(){
     beforeEach(function(){
-      this.result = this.subject.parse("<region>")
+      this.result = this.subject.parse("<region> lokey=50")
     })
 
     it("has one region", function(){
       expect(this.result.regions).eql([{
-        regionId: "r0"
+        regionId: "r0",
+        lokey: 50
       }])
     })
   })
 
   context("a string with a single region with a sample opcode", function(){
     beforeEach(function(){
-      this.result = this.subject.parse("<region> sample=trumpet-pp-c4.wav")
+      this.result = this.subject.parse("<region> lokey=60 sample=trumpet-pp-c4.wav")
     })
 
     it("has one region with the correct sample", function(){
       expect(this.result.regions).eql([{
         regionId: "r0",
+        lokey: 60,
         sample: "trumpet-pp-c4.wav"
       }])
     })
@@ -220,12 +222,13 @@ describe("parsing", function(){
 
   context("a string with a <global> with a sample opcde and a single region", function(){
     beforeEach(function(){
-      this.result = this.subject.parse("<global> sample=trumpet_pp_c4.wav <region> ")
+      this.result = this.subject.parse("<global> sample=trumpet_pp_c4.wav <region> lokey=60")
     })
 
     it("has one region with the correct sample", function(){
       expect(this.result.regions).eql([{
         regionId: "r0",
+        lokey: 60,
         sample: "trumpet_pp_c4.wav"
       }])
     })
@@ -233,12 +236,13 @@ describe("parsing", function(){
 
   context("a string with a single group with a single region with a sample opcode", function(){
     beforeEach(function(){
-      this.result = this.subject.parse("<group> <region> sample=trumpet_pp_c4.wav")
+      this.result = this.subject.parse("<group> <region> sample=trumpet_pp_c4.wav lokey=60")
     })
 
     it("has one region with the correct sample", function(){
       expect(this.result.regions).eql([{
         regionId: "r0",
+        lokey: 60,
         sample: "trumpet_pp_c4.wav"
       }])
     })
@@ -246,12 +250,13 @@ describe("parsing", function(){
 
   context("a string with a single group with a single region with a sample opcode", function(){
     beforeEach(function(){
-      this.result = this.subject.parse("<group> sample=trumpet_pp_c4.wav <region> ")
+      this.result = this.subject.parse("<group> sample=trumpet_pp_c4.wav <region> lokey=60")
     })
 
     it("has one region with the correct sample", function(){
       expect(this.result.regions).eql([{
         regionId: "r0",
+        lokey: 60,
         sample: "trumpet_pp_c4.wav"
       }])
     })
@@ -260,13 +265,13 @@ describe("parsing", function(){
   context("a string with a two groups and two regions", function(){
     beforeEach(function(){
       this.result = this.subject.parse(" \
-        <group> sample=trumpet_pp_c4.wav <region>  \
+        <group> sample=trumpet_pp_c4.wav <region> lokey=60  \
         <group> <region> sample=trumpet_pp_c#4.wav ")
     })
 
     it("has two regions with the correct sample opcodes", function(){
       expect(this.result.regions).eql([
-        { regionId: "r0", sample: "trumpet_pp_c4.wav" },
+        { regionId: "r0", sample: "trumpet_pp_c4.wav", lokey: 60 },
         { regionId: "r1", sample: "trumpet_pp_c#4.wav" }
       ])
     })
@@ -411,7 +416,7 @@ describe("parsing", function(){
  \
 <group> \
  volume=-4 \
- cutoff=1333.09 \
+ cutoff=2333.09 \
  resonance=0.5 \
  \
 <region> \
@@ -447,7 +452,7 @@ describe("parsing", function(){
           lovel: 0,
           hivel: 49,
           volume: -4,
-          cutoff: 1333.09,
+          cutoff: 2333.09,
           resonance: 0.5,
           pan: -68,
           regionId: "r0"
