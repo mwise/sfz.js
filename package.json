@@ -5,26 +5,26 @@
   "contributors": [],
   "description": "JavaScript solution for using .sfz files",
   "dependencies": {
-    "pegjs": "*"
+    "pegjs": "^0.10.0"
   },
   "devDependencies": {
-    "karma": "*",
-    "karma-mocha": "~0.1.1",
-    "mocha": "*",
-    "chai": "*",
-    "sinon": "*",
-    "sinon-chai": "*",
-    "underscore": "*",
-    "requirejs": "*",
-    "karma-requirejs": "~0.2.1",
-    "karma-chrome-launcher": "~0.1.2",
-    "karma-sinon-chai": "~0.1.4",
-    "browserify": "~3.28.2"
+    "browserify": "^17.0.0",
+    "chai": "^4.3.7",
+    "karma": "^6.4.1",
+    "karma-chrome-launcher": "^3.1.1",
+    "karma-mocha": "^2.0.1",
+    "karma-requirejs": "^1.1.0",
+    "karma-sinon-chai": "^2.0.2",
+    "mocha": "^10.2.0",
+    "requirejs": "^2.3.6",
+    "sinon": "^15.0.1",
+    "sinon-chai": "^3.7.0",
+    "underscore": "^1.13.6"
   },
   "scripts": {
-    "generate_parser": "./node_modules/pegjs/bin/pegjs src/sfz.pegjs src/parser.js",
-    "test": "./node_modules/mocha/bin/mocha",
-    "ci": "./node_modules/mocha/bin/mocha -w"
+    "generate_parser": "./node_modules/.bin/pegjs src/sfz.pegjs src/parser.js",
+    "test": "./node_modules/.bin/mocha",
+    "ci": "./node_modules/.bin/mocha -w"
   },
   "keywords": [],
   "main": "src/sfz.js"
