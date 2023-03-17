@@ -97,37 +97,43 @@
   }
 
   MIDISelect.prototype.changeMIDIPort = function(){
-    this.midiIn = this.midiAccess.inputs()[this.el.selectedIndex]
+    this.midiIn = this.midiAccess.inputs.values()[this.el.selectedIndex]
     this.midiIn.onmidimessage = this.midiMessageReceived
   }
 
   MIDISelect.prototype.selectMIDIIn = function(ev){
-    var list = this.midiAccess.inputs()
-    var selectedIndex = ev.target.selectedIndex
+    var inputs = this.midiAccess.inputs.values();
+    var selectedIndex = ev.target.selectedIndex;
+    var i = 0;
 
-    if (list.length >= selectedIndex) {
-      this.midiIn = list[selectedIndex]
-      this.midiIn.onmessage = this.midiMessageReceived
+    for (var input = inputs.next(); input && !input.done; input = inputs.next()) {
+      if (i === selectedIndex) {
+        this.midiIn = input.value;
+        this.midiIn.onmessage = this.midiMessageReceived
+      }
+      i++;
     }
   }
 
   MIDISelect.prototype.onMIDIStarted = function(midi){
-    this.midiAccess = midi
-    var list = this.midiAccess.inputs()
+    this.midiAccess = midi;
+    var inputs = this.midiAccess.inputs.values();
+    var list = [];
     this.el.options.length = 0
 
-    var selectMIDI = document.getElementById(this.el.id)
+    var selectMIDI = document.getElementById(this.el.id);
+    var i = 0;
 
     selectMIDI.options.length = 0
-    if (list.length) {
-      for (var i = 0; i < list.length; i++) {
-        var opt = new Option(list[i].name, list[i].fingerprint, i == 0, i == 0)
-        selectMIDI.options[i] = opt
-      }
-      this.midiIn = list[0]
-      this.midiIn.onmidimessage = this.midiMessageReceived.bind(this)
-      this.el.onchange = this.selectMIDIIn.bind(this)
+    for (var input = inputs.next(); input && !input.done; input = inputs.next()) {
+      var opt = new Option(input.value.name, input.value.id, i == 0, i == 0)
+      list.push(input.value);
+      selectMIDI.options[i] = opt
+      i++;
     }
+    this.midiIn = list[0]
+    this.midiIn.onmidimessage = this.midiMessageReceived.bind(this)
+    this.el.onchange = this.selectMIDIIn.bind(this)
   }
 
   MIDISelect.prototype.onMIDISystemError = function(msg){

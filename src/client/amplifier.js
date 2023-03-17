@@ -10,8 +10,8 @@ var pitchToFreq = function(pitch){
 
 var Amplifier = function(opts){
   this.context = opts.context
-  this.input = opts.context.createGainNode()
-  this.output = opts.context.createGainNode()
+  this.input = opts.context.createGain()
+  this.output = opts.context.createGain()
   this.input.connect(this.output)
 
   var depth = AudioMath.dbToGain(opts.lfo_depth)

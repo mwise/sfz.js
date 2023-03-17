@@ -13,7 +13,7 @@ var model = function(buffer, region, noteOn, audioContext, bend){
   this.voiceId = "voice" + voiceNumber
   voiceNumber += 1
 
-  this.output = audioContext.createGainNode()
+  this.output = audioContext.createGain()
 
   this.setupSource(buffer, region, noteOn, bend)
   this.setupFilter(region, noteOn)
