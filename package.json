@@ -16,15 +16,23 @@
     "karma-requirejs": "^1.1.0",
     "karma-sinon-chai": "^2.0.2",
     "mocha": "^10.2.0",
+    "nodemon": "^2.0.21",
     "requirejs": "^2.3.6",
+    "serve": "^14.2.0",
     "sinon": "^15.0.1",
     "sinon-chai": "^3.7.0",
     "underscore": "^1.13.6"
   },
   "scripts": {
-    "generate_parser": "./node_modules/.bin/pegjs src/sfz.pegjs src/parser.js",
-    "test": "./node_modules/.bin/mocha",
-    "ci": "./node_modules/.bin/mocha -w"
+    "build": "browserify build.js --standalone sfz > build/sfz.js",
+    "ci": "mocha -w",
+    "dev": "npm run build && serve",
+    "generate_parser": "pegjs -o src/parser.js src/sfz.pegjs",
+    "test": "npm run build && npm run test_node && npm run test_client",
+    "test_node": "mocha --reporter dot",
+    "test_node_ci": "nodemon mocha --reporter dot",
+    "test_client": "npm run build && karma start --single-run",
+    "test_client_ci": "npm run build && karma start --no-single-run"
   },
   "keywords": [],
   "main": "src/sfz.js"
