@@ -34,7 +34,7 @@
     "test_node_ci": "nodemon mocha --reporter dot",
     "test_client": "npm run build && karma start --single-run",
     "test_client_ci": "npm run build && karma start --no-single-run",
-    "watch": "watchify build.js -o build/sfz.js --verbose"
+    "watch": "watchify build.js --standalone sfz -o build/sfz.js --verbose"
   },
   "keywords": [],
   "main": "src/sfz.js"
