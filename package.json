@@ -21,7 +21,8 @@
     "serve": "^14.2.0",
     "sinon": "^15.0.1",
     "sinon-chai": "^3.7.0",
-    "underscore": "^1.13.6"
+    "underscore": "^1.13.6",
+    "watchify": "^4.0.0"
   },
   "scripts": {
     "build": "browserify build.js --standalone sfz > build/sfz.js",
@@ -32,7 +33,8 @@
     "test_node": "mocha --reporter dot",
     "test_node_ci": "nodemon mocha --reporter dot",
     "test_client": "npm run build && karma start --single-run",
-    "test_client_ci": "npm run build && karma start --no-single-run"
+    "test_client_ci": "npm run build && karma start --no-single-run",
+    "watch": "watchify build.js -o build/sfz.js --verbose"
   },
   "keywords": [],
   "main": "src/sfz.js"
