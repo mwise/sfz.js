@@ -29,7 +29,8 @@ describe("parsing", function(){
     beforeEach(function(){
       this.result = this.subject.parse("// ------------------------------ \
 // Commented text here \
- \
+ \
+ \
 // ------------------------------")
     })
 
