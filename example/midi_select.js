@@ -116,6 +116,14 @@
   }
 
   MIDISelect.prototype.onMIDIStarted = function(midi){
+    if (midi.inputs.size === 0) {
+      var selectMIDI = document.getElementById(this.el.id);
+      selectMIDI.options.length = 0
+      selectMIDI.options[0] = new Option('None', 'none', true, true);
+      selectMIDI.disabled = true;
+      console.log(selectMIDI.options);
+      return;
+    }
     this.midiAccess = midi;
     var inputs = this.midiAccess.inputs.values();
     var list = [];

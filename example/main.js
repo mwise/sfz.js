@@ -48,6 +48,11 @@ $(document).on("ready", function(){
       window.instrument.noteOn(e.detail.channel, e.detail.pitch, e.detail.velocity)
     })
 
+    midiSelect.on("noteOff", function(e){
+      if (!window.instrument) return;
+      window.instrument.noteOn(e.detail.channel, e.detail.pitch, 0)
+    })
+
     midiSelect.on("controlChange", function(e){
       if (!window.instrument) return;
       console.log(e.detail)
