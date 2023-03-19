@@ -25,16 +25,17 @@
     "watchify": "^4.0.0"
   },
   "scripts": {
-    "build": "browserify build.js --standalone sfz > build/sfz.js",
+    "build": "npm run generate_parser && browserify build.js --standalone sfz > out/sfz.js",
     "ci": "mocha -w",
-    "dev": "npm run build && serve",
+    "dev": "npm run build && serve ./out",
     "generate_parser": "pegjs -o src/parser.js src/sfz.pegjs",
+    "lint": "",
     "test": "npm run build && npm run test_node && npm run test_client",
     "test_node": "mocha --reporter dot",
     "test_node_ci": "nodemon mocha --reporter dot",
     "test_client": "npm run build && karma start --single-run",
     "test_client_ci": "npm run build && karma start --no-single-run",
-    "watch": "watchify build.js --standalone sfz -o build/sfz.js --verbose"
+    "watch": "watchify build.js --standalone sfz -o out/sfz.js --verbose"
   },
   "keywords": [],
   "main": "src/sfz.js"

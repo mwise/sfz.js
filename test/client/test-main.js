@@ -12,7 +12,7 @@ requirejs.config({
     baseUrl: '/base',
 
     paths: {
-      "sfz": "build/sfz"
+      "sfz": "out/sfz"
     },
 
     shim: {},

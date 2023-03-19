@@ -14,7 +14,7 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      {pattern: 'build/sfz.js', included: false},
+      {pattern: 'out/sfz.js', included: false},
       {pattern: 'test/client/lib/*.js', included: false},
       {pattern: 'test/client/specs/*.spec.js', included: false},
       {pattern: 'test/client/spec_helper.js', included: false},
