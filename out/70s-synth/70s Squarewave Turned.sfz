@@ -10,5 +10,5 @@
 loop_mode=loop_continuous
 ampeg_release=0.75
 
-<region> example/70s-synth/SQUAREWAVE_TURN.wav
+<region> out/70s-synth/SQUAREWAVE_TURN.wav
 

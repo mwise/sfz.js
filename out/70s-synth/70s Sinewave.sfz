@@ -7,9 +7,8 @@
 // *****************************************************************************
 
 <group>
-ampeg_release=1
-
-<region> sample=example/70s-synth/TRUMPET.wav
-loop_start=61149
-loop_end=93348
 loop_mode=loop_continuous
+ampeg_release=0.75
+
+<region> sample=out/70s-synth/SINEWAVE.wav
+

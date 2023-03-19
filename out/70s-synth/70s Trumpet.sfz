@@ -9,7 +9,7 @@
 <group>
 ampeg_release=1
 
-<region> sample=example/70s-synth/TRUMBONE.wav
-loop_start=67585
-loop_end=69120
+<region> sample=out/70s-synth/TRUMPET.wav
+loop_start=61149
+loop_end=93348
 loop_mode=loop_continuous

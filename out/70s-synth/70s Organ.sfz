@@ -7,8 +7,9 @@
 // *****************************************************************************
 
 <group>
+ampeg_release=1.25
+
+<region> sample=out/70s-synth/ORGAN.wav
+loop_start=16683
+loop_end=17271
 loop_mode=loop_continuous
-ampeg_release=0.75
-
-<region> sample=example/70s-synth/TRIANGLE.wav
-

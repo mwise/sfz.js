@@ -13,7 +13,7 @@ pitchlfo_depth=30
 
 ampeg_release=1.25
 
-<region> sample=example/70s-synth/ORGAN.wav
+<region> sample=out/70s-synth/ORGAN.wav
 loop_start=16683
 loop_end=17271
 loop_mode=loop_continuous

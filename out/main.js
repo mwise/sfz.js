@@ -3,7 +3,7 @@ var ac = new AudioContext()
 
 var keyCodes = [65, 83, 68, 70, 71, 72, 74, 75]
 
-var sfzUrl = "/example/70s-synth/70s Organ Vibrato.sfz"
+var sfzUrl = "/out/70s-synth/70s Organ Vibrato.sfz"
 
 var loadPreset = function(url){
   sfz.load(ac, url, function(instrument){
