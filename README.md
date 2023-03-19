@@ -1,4 +1,5 @@
 # sfz.js
+![Release](https://github.com/kmturley/sfz.js/workflows/Release/badge.svg)
 
 SFZ player using the [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API), built with:
 
