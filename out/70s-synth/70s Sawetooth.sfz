@@ -10,5 +10,5 @@
 loop_mode=loop_continuous
 ampeg_release=0.75
 
-<region> sample=out/70s-synth/SAWTOOTH.wav
+<region> sample=70s-synth/SAWTOOTH.wav
 
