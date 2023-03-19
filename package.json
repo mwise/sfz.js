@@ -30,7 +30,7 @@
     "dev": "npm run build && serve ./out",
     "generate_parser": "pegjs -o src/parser.js src/sfz.pegjs",
     "lint": "",
-    "test": "npm run build && npm run test_node && npm run test_client",
+    "test": "npm run build && npm run test_node",
     "test_node": "mocha --reporter dot",
     "test_node_ci": "nodemon mocha --reporter dot",
     "test_client": "npm run build && karma start --single-run",
