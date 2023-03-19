@@ -1,9 +1,9 @@
 var presets = {
   "Sonatina": [
-    "/example/piano.mp3.sfz",
-    "/example/Woodwinds - Oboe Solo.sfz",
-    "/example/trumpet.sfz",
-    "/example/horn-solo.mp3.sfz"
+    "/out/piano.mp3.sfz",
+    "/out/Woodwinds - Oboe Solo.sfz",
+    "/out/trumpet.sfz",
+    "/out/horn-solo.mp3.sfz"
   ],
   "000": [
     "/Samples/gen_user_wav/000/000_Stereo_Grand.sfz",
