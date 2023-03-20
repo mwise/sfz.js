@@ -10821,7 +10821,9 @@ Region = function(opts){
 module.exports = Region
 
 },{"./parameter":18,"underscore":2}],21:[function(require,module,exports){
-var sfz = {}
+var sfz = {
+  name: 'sfz'
+}
   , Parser = require("./parser")
 
 sfz.Instrument = require("./instrument")
