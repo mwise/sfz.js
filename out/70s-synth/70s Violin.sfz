@@ -1,0 +1,22 @@
+// *****************************************************************************
+// Sounds from original late 70's synth, original only possible to use one note
+// at the time.
+// v.1.2
+//
+// https://soundcloud.com/eysteinn-leifur
+// *****************************************************************************
+
+<group>
+pitchlfo_delay=0.2
+pitchlfo_freq=10
+pitchlfo_depth=10
+
+ampeg_release=1.25
+
+<region> sample=70s-synth/VIOLIN.wav
+loop_start=44709
+loop_end=90426
+loop_mode=loop_continuous
+<region> sample=70s-synth/SAWTOOTH.wav
+loop_mode=loop_continuous
+volume=-20

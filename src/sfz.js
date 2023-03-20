@@ -1,4 +1,6 @@
-var sfz = {}
+var sfz = {
+  name: 'sfz'
+}
   , Parser = require("./parser")
 
 sfz.Instrument = require("./instrument")

@@ -1,0 +1,15 @@
+// *****************************************************************************
+// Sounds from original late 70's synth, original only possible to use one note
+// at the time.
+// v.1.2
+//
+// https://soundcloud.com/eysteinn-leifur
+// *****************************************************************************
+
+<group>
+ampeg_release=1.25
+
+<region> sample=70s-synth/ORGAN.wav
+loop_start=16683
+loop_end=17271
+loop_mode=loop_continuous

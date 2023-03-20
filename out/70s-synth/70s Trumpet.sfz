@@ -1,0 +1,15 @@
+// *****************************************************************************
+// Sounds from original late 70's synth, original only possible to use one note
+// at the time.
+// v.1.2
+//
+// https://soundcloud.com/eysteinn-leifur
+// *****************************************************************************
+
+<group>
+ampeg_release=1
+
+<region> sample=70s-synth/TRUMPET.wav
+loop_start=61149
+loop_end=93348
+loop_mode=loop_continuous

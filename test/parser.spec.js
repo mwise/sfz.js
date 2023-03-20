@@ -11,7 +11,7 @@ describe("parsing", function(){
   before(function(done){
     var self = this
     var data = fs.readFileSync(grammarPath, "utf-8")
-    this.subject = pegjs.buildParser(data)
+    this.subject = pegjs.generate(data)
     done()
   })
 
@@ -29,7 +29,8 @@ describe("parsing", function(){
     beforeEach(function(){
       this.result = this.subject.parse("// ------------------------------ \
 // Commented text here \
- \
+ \
+ \
 // ------------------------------")
     })
 

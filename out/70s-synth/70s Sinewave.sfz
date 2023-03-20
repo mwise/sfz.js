@@ -1,0 +1,14 @@
+// *****************************************************************************
+// Sounds from original late 70's synth, original only possible to use one note
+// at the time.
+// v.1.2
+//
+// https://soundcloud.com/eysteinn-leifur
+// *****************************************************************************
+
+<group>
+loop_mode=loop_continuous
+ampeg_release=0.75
+
+<region> sample=70s-synth/SINEWAVE.wav
+

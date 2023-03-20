@@ -20,7 +20,7 @@ var LFO = function(opts){
 
   this.oscillator = this.context.createOscillator()
   this.oscillator.frequency.value = this.freq
-  this.gainNode = this.context.createGainNode()
+  this.gainNode = this.context.createGain()
   this.oscillator.connect(this.gainNode)
 }
 
